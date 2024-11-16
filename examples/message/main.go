@@ -8,12 +8,13 @@ import (
 	"syscall"
 
 	"github.com/MrNemo64/dgcommander/dgc"
+	"github.com/MrNemo64/dgcommander/dgc/handlers"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	fmt.Println("Running choices example")
+	fmt.Println("Starting messages example")
 	if err := godotenv.Load(); err != nil {
 		panic(err)
 	}
@@ -29,21 +30,12 @@ func main() {
 
 	commander := dgc.New(slog.Default(), ss)
 
-	builder := dgc.NewSimpleSlash().
-		Name("string-choices").
-		Description("example command").
-		AddArguments(
-			dgc.NewStringArgument().
-				Name("first-arg").
-				Description("the first arg").
-				Required(true),
-			dgc.NewBooleanArgument().
-				Name("bool-arg").
-				Description("the seccond arg").
-				Required(false),
-		)
-
-	cmd, err := commander.AddCommand(builder)
+	cmd, err := commander.AddCommand(
+		dgc.NewMessage().
+			Name("Resend message").
+			Handler(handleResend).
+			AllowEverywhere(true),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -59,4 +51,12 @@ func main() {
 	if err := ss.ApplicationCommandDelete(ss.State.User.ID, cmd.GuildID, cmd.ID); err != nil {
 		panic(err)
 	}
+}
+
+func handleResend(ctx *handlers.MessageExecutionContext, sender *discordgo.User) error {
+	fmt.Printf("Called by %s (%s) on message %s\n", sender.Username, sender.ID, ctx.Message.ID)
+	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
+		Content: ctx.Message.Content,
+		Embeds:  ctx.Message.Embeds,
+	})
 }

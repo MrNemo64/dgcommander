@@ -1,9 +1,12 @@
 package dgc
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"github.com/MrNemo64/dgcommander/dgc/handlers"
+	"github.com/bwmarrin/discordgo"
+)
 
 type userBuilder struct {
-	commandBuilder[*userBuilder]
+	commandBuilder[handlers.UserHandler, *userBuilder]
 }
 
 func NewUser() *userBuilder {

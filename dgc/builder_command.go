@@ -12,8 +12,9 @@ type CommandBuilder interface {
 	create() command
 }
 
-type commandBuilder[B any] struct {
+type commandBuilder[H any, B any] struct {
 	upper        B
+	handler      H
 	name         string
 	guildId      string
 	nsfw         bool
@@ -21,9 +22,9 @@ type commandBuilder[B any] struct {
 	contexts     []discordgo.InteractionContextType     // https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-context-types
 }
 
-func (b *commandBuilder[B]) guild() string { return b.guildId }
+func (b *commandBuilder[H, B]) guild() string { return b.guildId }
 
-func (b *commandBuilder[B]) discordDefineForCreation() *discordgo.ApplicationCommand {
+func (b *commandBuilder[H, B]) discordDefineForCreation() *discordgo.ApplicationCommand {
 	var integrations *[]discordgo.ApplicationIntegrationType
 	if len(b.integrations) > 0 {
 		integrations = &b.integrations
@@ -40,22 +41,27 @@ func (b *commandBuilder[B]) discordDefineForCreation() *discordgo.ApplicationCom
 	}
 }
 
-func (b *commandBuilder[B]) Name(name string) B {
+func (b *commandBuilder[H, B]) Handler(handler H) B {
+	b.handler = handler
+	return b.upper
+}
+
+func (b *commandBuilder[H, B]) Name(name string) B {
 	b.name = name
 	return b.upper
 }
 
-func (b *commandBuilder[B]) ForGuild(guildId string) B {
+func (b *commandBuilder[H, B]) ForGuild(guildId string) B {
 	b.guildId = guildId
 	return b.upper
 }
 
-func (b *commandBuilder[B]) Nsfw(nsfw bool) B {
+func (b *commandBuilder[H, B]) Nsfw(nsfw bool) B {
 	b.nsfw = nsfw
 	return b.upper
 }
 
-func (b *commandBuilder[B]) GuildInstallable(installable bool) B {
+func (b *commandBuilder[H, B]) GuildInstallable(installable bool) B {
 	if installable {
 		if !slices.Contains(b.integrations, discordgo.ApplicationIntegrationGuildInstall) {
 			b.integrations = append(b.integrations, discordgo.ApplicationIntegrationGuildInstall)
@@ -66,7 +72,7 @@ func (b *commandBuilder[B]) GuildInstallable(installable bool) B {
 	return b.upper
 }
 
-func (b *commandBuilder[B]) UserInstallable(installable bool) B {
+func (b *commandBuilder[H, B]) UserInstallable(installable bool) B {
 	if installable {
 		if !slices.Contains(b.integrations, discordgo.ApplicationIntegrationUserInstall) {
 			b.integrations = append(b.integrations, discordgo.ApplicationIntegrationUserInstall)
@@ -77,7 +83,7 @@ func (b *commandBuilder[B]) UserInstallable(installable bool) B {
 	return b.upper
 }
 
-func (b *commandBuilder[B]) AllowInGuilds(allowed bool) B {
+func (b *commandBuilder[H, B]) AllowInGuilds(allowed bool) B {
 	if allowed {
 		if !slices.Contains(b.contexts, discordgo.InteractionContextGuild) {
 			b.contexts = append(b.contexts, discordgo.InteractionContextGuild)
@@ -88,7 +94,7 @@ func (b *commandBuilder[B]) AllowInGuilds(allowed bool) B {
 	return b.upper
 }
 
-func (b *commandBuilder[B]) AllowInBotDM(allowed bool) B {
+func (b *commandBuilder[H, B]) AllowInBotDM(allowed bool) B {
 	if allowed {
 		if !slices.Contains(b.contexts, discordgo.InteractionContextBotDM) {
 			b.contexts = append(b.contexts, discordgo.InteractionContextBotDM)
@@ -99,7 +105,7 @@ func (b *commandBuilder[B]) AllowInBotDM(allowed bool) B {
 	return b.upper
 }
 
-func (b *commandBuilder[B]) AllowInPrivateChannel(allowed bool) B {
+func (b *commandBuilder[H, B]) AllowInPrivateChannel(allowed bool) B {
 	if allowed {
 		if !slices.Contains(b.contexts, discordgo.InteractionContextPrivateChannel) {
 			b.contexts = append(b.contexts, discordgo.InteractionContextPrivateChannel)
@@ -107,5 +113,12 @@ func (b *commandBuilder[B]) AllowInPrivateChannel(allowed bool) B {
 	} else {
 		b.contexts = removeElement(b.contexts, discordgo.InteractionContextPrivateChannel)
 	}
+	return b.upper
+}
+
+func (b *commandBuilder[H, B]) AllowEverywhere(allowed bool) B {
+	b.AllowInBotDM(allowed)
+	b.AllowInGuilds(allowed)
+	b.AllowInPrivateChannel(allowed)
 	return b.upper
 }

@@ -1,9 +1,12 @@
 package dgc
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"github.com/MrNemo64/dgcommander/dgc/handlers"
+	"github.com/bwmarrin/discordgo"
+)
 
 type messageBuilder struct {
-	commandBuilder[*messageBuilder]
+	commandBuilder[handlers.MessageHandler, *messageBuilder]
 }
 
 func NewMessage() *messageBuilder {
@@ -13,7 +16,9 @@ func NewMessage() *messageBuilder {
 }
 
 func (b *messageBuilder) create() command {
-	panic("not implemented")
+	return &handlers.MessageCommand{
+		Handler: b.handler,
+	}
 }
 
 func (b *messageBuilder) discordDefineForCreation() *discordgo.ApplicationCommand {

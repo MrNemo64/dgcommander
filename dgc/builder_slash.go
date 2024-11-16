@@ -1,9 +1,12 @@
 package dgc
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"github.com/MrNemo64/dgcommander/dgc/handlers"
+	"github.com/bwmarrin/discordgo"
+)
 
 type slashBuilder[B any] struct {
-	commandBuilder[B]
+	commandBuilder[handlers.SlashHandler, B]
 	description string
 }
 
@@ -27,7 +30,7 @@ type slashSimpleBuilder struct {
 func NewSimpleSlash() *slashSimpleBuilder {
 	b := &slashSimpleBuilder{
 		slashBuilder: slashBuilder[*slashSimpleBuilder]{
-			commandBuilder: commandBuilder[*slashSimpleBuilder]{},
+			commandBuilder: commandBuilder[handlers.SlashHandler, *slashSimpleBuilder]{},
 		},
 		argumentListBuilder: argumentListBuilder[*slashSimpleBuilder]{},
 	}
@@ -54,7 +57,7 @@ type slashComplexBuilder struct {
 func NewComplexSlash() *slashComplexBuilder {
 	b := &slashComplexBuilder{
 		slashBuilder: slashBuilder[*slashComplexBuilder]{
-			commandBuilder: commandBuilder[*slashComplexBuilder]{},
+			commandBuilder: commandBuilder[handlers.SlashHandler, *slashComplexBuilder]{},
 		},
 	}
 	b.slashBuilder.commandBuilder.upper = b

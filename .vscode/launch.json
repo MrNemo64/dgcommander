@@ -5,11 +5,19 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Choices",
+      "name": "choices",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "examples/choices/main.go",
+      "cwd": "${cwd}"
+    },
+    {
+      "name": "message",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "examples/message/main.go",
       "cwd": "${cwd}"
     }
   ]
