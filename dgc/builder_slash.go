@@ -41,7 +41,7 @@ func (b *slashSimpleBuilder) create() command {
 }
 
 func (b *slashSimpleBuilder) discordDefineForCreation() *discordgo.ApplicationCommand {
-	c := b.commandBuilder.discordDefineForCreation()
+	c := b.slashBuilder.discordDefineForCreation()
 	c.Options = b.argumentListBuilder.discordDefineForCreation()
 	return c
 }
@@ -76,7 +76,7 @@ func (b *slashComplexBuilder) create() command {
 }
 
 func (b *slashComplexBuilder) discordDefineForCreation() *discordgo.ApplicationCommand {
-	c := b.commandBuilder.discordDefineForCreation()
+	c := b.slashBuilder.discordDefineForCreation()
 	c.Options = make([]*discordgo.ApplicationCommandOption, len(b.subCommands))
 	for i, subCommand := range b.subCommands {
 		c.Options[i] = subCommand.discordDefineForCreation()

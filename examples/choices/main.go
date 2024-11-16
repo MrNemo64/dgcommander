@@ -30,13 +30,16 @@ func main() {
 
 	builder := dgc.NewSimpleSlash().
 		Name("string-choices").
+		Description("example command").
 		AddArguments(
 			dgc.NewStringArgument().
 				Name("first-arg").
 				Description("the first arg").
 				Required(true),
 			dgc.NewBooleanArgument().
-				Name("bool-arg"),
+				Name("bool-arg").
+				Description("the seccond arg").
+				Required(false),
 		)
 
 	if _, err := commander.AddCommand(builder); err != nil {
