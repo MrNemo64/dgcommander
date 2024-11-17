@@ -29,8 +29,8 @@ func main() {
 	// Generate Makefile content
 	var makefileContent bytes.Buffer
 	makefileContent.WriteString("# Auto-generated Makefile. Do not edit manually.\n\n")
-	makefileContent.WriteString("generate:\n")
-	makefileContent.WriteString("\tgo run tools/generate.go\n\n")
+	makefileContent.WriteString("generate.makefile-debug:\n")
+	makefileContent.WriteString("\tgo run tools/makefile_debug/main.go\n\n")
 	for _, example := range examples {
 		makefileContent.WriteString(fmt.Sprintf("example.%s:\n", example))
 		makefileContent.WriteString(fmt.Sprintf("\tgo run examples/%s/main.go\n\n", example))

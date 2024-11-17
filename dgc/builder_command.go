@@ -14,7 +14,7 @@ type CommandBuilder interface {
 
 type commandBuilder[H any, B any] struct {
 	upper        B
-	handler      H
+	handler      H // TODO handler can't be here because slashComplexBuilder doesn't have a handler
 	name         string
 	guildId      string
 	nsfw         bool

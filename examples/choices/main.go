@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/MrNemo64/dgcommander/dgc"
+	"github.com/MrNemo64/dgcommander/dgc/handlers"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )
@@ -41,7 +42,11 @@ func main() {
 				Name("bool-arg").
 				Description("the seccond arg").
 				Required(false),
-		)
+		).
+		Handler(func(sender *discordgo.User, ctx *handlers.SlashExecutionContext) error {
+			fmt.Println("Called")
+			return nil
+		})
 
 	cmd, err := commander.AddCommand(builder)
 	if err != nil {

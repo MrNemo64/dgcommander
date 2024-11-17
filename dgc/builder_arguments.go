@@ -1,6 +1,7 @@
 package dgc
 
 import (
+	"github.com/MrNemo64/dgcommander/dgc/handlers"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -36,6 +37,10 @@ func (h *argumentListBuilder[B]) discordDefineForCreation() []*discordgo.Applica
 		}
 	}
 	return append(requiredArgs, optionalArgs...)
+}
+
+func (h *argumentListBuilder[B]) create() handlers.ArgumentList {
+	panic("todo")
 }
 
 type baseCommandArgumentBuilder[B any] struct {

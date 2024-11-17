@@ -40,7 +40,7 @@ func NewSimpleSlash() *slashSimpleBuilder {
 }
 
 func (b *slashSimpleBuilder) create() command {
-	panic("not implemented")
+	return handlers.NewSlashSimpleCommand(b.argumentListBuilder.create(), b.handler)
 }
 
 func (b *slashSimpleBuilder) discordDefineForCreation() *discordgo.ApplicationCommand {
@@ -75,7 +75,11 @@ func (b *slashComplexBuilder) AddSubCommand(command *slashSubCommandBuilder) *sl
 }
 
 func (b *slashComplexBuilder) create() command {
-	panic("not implemented")
+	subCommands := make(map[string]handlers.SlashCommand)
+	for _, v := range b.subCommands {
+		subCommands[v.optionName()] = v.create()
+	}
+	return handlers.NewSlashGroupCommand(subCommands)
 }
 
 func (b *slashComplexBuilder) discordDefineForCreation() *discordgo.ApplicationCommand {
@@ -90,10 +94,13 @@ func (b *slashComplexBuilder) discordDefineForCreation() *discordgo.ApplicationC
 type subCommandLike interface {
 	isSubCommandLike() bool
 	discordDefineForCreation() *discordgo.ApplicationCommandOption
+	optionName() string
+	create() handlers.SlashCommand
 }
 
 type slashSubCommandBuilder struct {
 	argumentListBuilder[*slashSubCommandBuilder]
+	handler     handlers.SlashHandler
 	name        string
 	description string
 }
@@ -105,6 +112,8 @@ func NewSubCommand() *slashSubCommandBuilder {
 }
 
 func (*slashSubCommandBuilder) isSubCommandLike() bool { return true }
+
+func (b *slashSubCommandBuilder) optionName() string { return b.name }
 
 func (b *slashSubCommandBuilder) Name(name string) *slashSubCommandBuilder {
 	b.name = name
@@ -125,6 +134,10 @@ func (b *slashSubCommandBuilder) discordDefineForCreation() *discordgo.Applicati
 	}
 }
 
+func (b *slashSubCommandBuilder) create() handlers.SlashCommand {
+	return handlers.NewSlashSimpleCommand(b.argumentListBuilder.create(), b.handler)
+}
+
 type slashSubCommandGroupBuilder struct {
 	subCommands []*slashSubCommandBuilder
 	name        string
@@ -136,6 +149,8 @@ func NewSubCommandGroup() *slashSubCommandGroupBuilder {
 }
 
 func (*slashSubCommandGroupBuilder) isSubCommandLike() bool { return true }
+
+func (b *slashSubCommandGroupBuilder) optionName() string { return b.name }
 
 func (b *slashSubCommandGroupBuilder) Name(name string) *slashSubCommandGroupBuilder {
 	b.name = name
@@ -168,4 +183,12 @@ func (b *slashSubCommandGroupBuilder) discordDefineForCreation() *discordgo.Appl
 		c.Options[i] = subCommand.discordDefineForCreation()
 	}
 	return c
+}
+
+func (b *slashSubCommandGroupBuilder) create() handlers.SlashCommand {
+	subCommands := make(map[string]handlers.SlashCommand)
+	for _, v := range b.subCommands {
+		subCommands[v.name] = v.create()
+	}
+	return handlers.NewSlashGroupCommand(subCommands)
 }
