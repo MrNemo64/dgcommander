@@ -4,30 +4,30 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type messageCommandBuilder struct {
-	genericCommandBuilder[*messageCommandBuilder]
+type MessageCommandBuilder struct {
+	genericCommandBuilder[*MessageCommandBuilder]
 	handler MessageCommandHandler
 }
 
-func NewMessageCommand() *messageCommandBuilder {
-	b := &messageCommandBuilder{}
+func NewMessageCommand() *MessageCommandBuilder {
+	b := &MessageCommandBuilder{}
 	b.genericCommandBuilder.upper = b
 	return b
 }
 
-func (b *messageCommandBuilder) create() command {
+func (b *MessageCommandBuilder) create() command {
 	return &messageCommand{
 		handler: b.handler,
 	}
 }
 
-func (b *messageCommandBuilder) discordDefineForCreation() *discordgo.ApplicationCommand {
+func (b *MessageCommandBuilder) discordDefineForCreation() *discordgo.ApplicationCommand {
 	c := b.genericCommandBuilder.discordDefineForCreation()
 	c.Type = discordgo.MessageApplicationCommand
 	return c
 }
 
-func (b *messageCommandBuilder) Handler(handler MessageCommandHandler) *messageCommandBuilder {
+func (b *MessageCommandBuilder) Handler(handler MessageCommandHandler) *MessageCommandBuilder {
 	b.handler = handler
 	return b
 }

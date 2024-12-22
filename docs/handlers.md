@@ -24,7 +24,7 @@ namespace Message {
 
     class messageCommand {
         handler MessageCommandHandler
-        Manage(log *Logger, sender *User, ss *Session, i *InteractionCreate) (bool, error)
+        manage(log *Logger, sender *User, ss *Session, i *InteractionCreate) (bool, error)
     }
 
     class MessageExecutionContext {
@@ -35,4 +35,15 @@ namespace Message {
 
 messageCommand --|> command
 MessageExecutionContext --* executionContext
+
+namespace Slash {
+    class slashCommand {
+        manage(log *Logger, sender *User, ss *Session, i *InteractionCreate) (bool, error)
+    }
+
+    class SlashExecutionContext
+}
+
+slashCommand --|> command
+SlashExecutionContext --* executionContext
 ```
