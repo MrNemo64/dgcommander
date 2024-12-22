@@ -8,6 +8,7 @@ import (
 type commandArgument interface {
 	isCommandArgument() bool
 	discordDefineForCreation() *discordgo.ApplicationCommandOption
+	create() (bool, string, handlers.ArgumentInstance)
 }
 
 type argumentListBuilder[B any] struct {
@@ -40,10 +41,24 @@ func (h *argumentListBuilder[B]) discordDefineForCreation() []*discordgo.Applica
 }
 
 func (h *argumentListBuilder[B]) create() handlers.ArgumentList {
-	panic("todo")
+	required := make(map[string]handlers.ArgumentInstance)
+	optional := make(map[string]handlers.ArgumentInstance)
+	for _, argument := range h.arguments {
+		r, name, arg := argument.create()
+		if r {
+			required[name] = arg
+		} else {
+			optional[name] = arg
+		}
+	}
+	return *handlers.NewArgumentList(required, optional)
 }
 
-type baseCommandArgumentBuilder[B any] struct {
+type specificCommandArgumentBuilder interface {
+	create() handlers.ArgumentInstance
+}
+
+type baseCommandArgumentBuilder[B specificCommandArgumentBuilder] struct {
 	upper       B
 	kind        discordgo.ApplicationCommandOptionType
 	name        string
@@ -60,6 +75,10 @@ func (arg *baseCommandArgumentBuilder[T]) discordDefineForCreation() *discordgo.
 		Description: arg.description,
 		Required:    arg.required,
 	}
+}
+
+func (arg *baseCommandArgumentBuilder[T]) create() (bool, string, handlers.ArgumentInstance) {
+	return arg.required, arg.name, arg.upper.create()
 }
 
 func (b *baseCommandArgumentBuilder[T]) Name(name string) T {
@@ -85,6 +104,10 @@ func NewBooleanArgument() *booleanArgumentBuilder {
 	b := &booleanArgumentBuilder{baseCommandArgumentBuilder: baseCommandArgumentBuilder[*booleanArgumentBuilder]{kind: discordgo.ApplicationCommandOptionBoolean}}
 	b.baseCommandArgumentBuilder.upper = b
 	return b
+}
+
+func (b *booleanArgumentBuilder) create() handlers.ArgumentInstance {
+
 }
 
 type userArgumentBuilder struct {
