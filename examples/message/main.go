@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"github.com/MrNemo64/dgcommander/dgc"
-	"github.com/MrNemo64/dgcommander/dgc/handlers"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )
@@ -31,7 +30,7 @@ func main() {
 	commander := dgc.New(slog.Default(), ss)
 
 	cmd, err := commander.AddCommand(
-		dgc.NewMessage().
+		dgc.NewMessageCommand().
 			Name("Resend message").
 			Handler(handleResend).
 			AllowEverywhere(true),
@@ -53,7 +52,7 @@ func main() {
 	}
 }
 
-func handleResend(ctx *handlers.MessageExecutionContext, sender *discordgo.User) error {
+func handleResend(ctx *dgc.MessageExecutionContext, sender *discordgo.User) error {
 	fmt.Printf("Called by %s (%s) on message %s\n", sender.Username, sender.ID, ctx.Message.ID)
 	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
 		Content: ctx.Message.Content,

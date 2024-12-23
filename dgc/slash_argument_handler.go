@@ -1,3 +1,3 @@
-package dgc2
+package dgc
 
 type SlashCommandArgument any

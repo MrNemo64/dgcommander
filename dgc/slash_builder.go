@@ -1,4 +1,4 @@
-package dgc2
+package dgc
 
 import (
 	"github.com/bwmarrin/discordgo"

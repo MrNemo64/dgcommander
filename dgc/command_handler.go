@@ -1,4 +1,4 @@
-package dgc2
+package dgc
 
 import (
 	"log/slog"
