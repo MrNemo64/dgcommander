@@ -43,7 +43,10 @@ func (b *SimpleSlashCommandBuilder) discordDefineForCreation() *discordgo.Applic
 }
 
 func (b *SimpleSlashCommandBuilder) create() command {
-	panic("TODO")
+	return &simpleSlashCommand{
+		handler: b.handler,
+		args:    b.slashCommandArgumentListBuilder.create(),
+	}
 }
 
 func (b *SimpleSlashCommandBuilder) Handler(handler SlashCommandHandler) *SimpleSlashCommandBuilder {
@@ -55,6 +58,7 @@ func (b *SimpleSlashCommandBuilder) Handler(handler SlashCommandHandler) *Simple
 
 type subcommandLikeBuilder interface {
 	discordDefineForCreation() *discordgo.ApplicationCommandOption
+	create() (string, genericSlashCommand)
 }
 
 type MultiSlashCommandBuilder struct {
@@ -78,7 +82,14 @@ func (b *MultiSlashCommandBuilder) discordDefineForCreation() *discordgo.Applica
 }
 
 func (b *MultiSlashCommandBuilder) create() command {
-	panic("TODO")
+	sub := make(map[string]genericSlashCommand)
+	for _, v := range b.subCommands {
+		name, command := v.create()
+		sub[name] = command
+	}
+	return &multiSlashCommand{
+		subCommands: sub,
+	}
 }
 
 func (b *MultiSlashCommandBuilder) AddSubCommandGroup(group *SubSlashCommandGroupBuilder) *MultiSlashCommandBuilder {
@@ -110,6 +121,13 @@ func (b *SubSlashCommandBuilder) discordDefineForCreation() *discordgo.Applicati
 		Name:        b.name,
 		Description: b.description,
 		Options:     b.slashCommandArgumentListBuilder.discordDefineForCreation(),
+	}
+}
+
+func (b *SubSlashCommandBuilder) create() (string, genericSlashCommand) {
+	return b.name, &simpleSlashCommand{
+		handler: b.handler,
+		args:    b.slashCommandArgumentListBuilder.create(),
 	}
 }
 
@@ -149,6 +167,17 @@ func (b *SubSlashCommandGroupBuilder) discordDefineForCreation() *discordgo.Appl
 		c.Options[i] = subCommand.discordDefineForCreation()
 	}
 	return c
+}
+
+func (b *SubSlashCommandGroupBuilder) create() (string, genericSlashCommand) {
+	sub := make(map[string]genericSlashCommand)
+	for _, v := range b.commands {
+		name, command := v.create()
+		sub[name] = command
+	}
+	return b.name, &multiSlashCommand{
+		subCommands: sub,
+	}
 }
 
 func (b *SubSlashCommandGroupBuilder) Name(name string) *SubSlashCommandGroupBuilder {

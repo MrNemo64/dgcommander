@@ -6,3 +6,6 @@ generate.makefile-debug:
 example.message:
 	go run examples/message/main.go
 
+example.slash-calculator:
+	go run examples/slash-calculator/main.go
+

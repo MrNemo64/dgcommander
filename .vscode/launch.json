@@ -11,6 +11,14 @@
       "mode": "auto",
       "program": "examples/message/main.go",
       "cwd": "${cwd}"
+    },
+    {
+      "name": "slash-calculator",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "examples/slash-calculator/main.go",
+      "cwd": "${cwd}"
     }
   ]
 }

@@ -7,11 +7,11 @@ type DGCError struct {
 	args []any
 }
 
-func MakeError(msg string) DGCError {
+func makeError(msg string) DGCError {
 	return DGCError{msg: msg}
 }
 
-func (err DGCError) WithArgs(arg ...any) DGCError {
+func (err DGCError) withArgs(arg ...any) DGCError {
 	copy := err
 	copy.args = arg
 	return copy
