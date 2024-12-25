@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
@@ -42,6 +43,21 @@ func main() {
 					dgc.NewNumberArgument().Name("b").Description("Seccond value of the sum").Required(true),
 				).
 				Handler(handleSum),
+			).
+			AddSubCommandGroup(dgc.NewSubCommandGroup().
+				Name("trigonometry").
+				Description("Trigonometry related functions").
+				AddSubCommand(dgc.NewSubCommand().
+					Name("sin").
+					Description("Calculates the sin of the given angle").
+					AddArguments(
+						dgc.NewNumberArgument().Name("angle").Description("The angle to calculate the sin").Required(true),
+						dgc.NewNumberChoicesArgument().Name("degree").Description("Degree of type to calculate").Required(false).
+							AddChoice("degrees", math.Pi/180.01).
+							AddChoice("radians", 1),
+					).
+					Handler(handleSin),
+				),
 			),
 	)
 	if err != nil {
@@ -66,5 +82,14 @@ func handleSum(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
 	b := ctx.GetRequiredNumber("b")
 	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
 		Content: fmt.Sprintf("The result of `%.2f + %.2f` is `%.2f`", a, b, a+b),
+	})
+}
+
+func handleSin(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
+	angle := ctx.GetRequiredNumber("angle")
+	degree := ctx.GetNumberOr("degree", 1) // default is radians
+	angle *= degree
+	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
+		Content: fmt.Sprintf("The `sin(%.2f)` is `%.2f`", angle, math.Sin(angle)),
 	})
 }

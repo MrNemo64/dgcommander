@@ -1,8 +1,6 @@
 package dgc
 
 import (
-	"reflect"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -30,7 +28,7 @@ func (a *inlinedSlashCommandArgument[T]) Parse(info *ArgumentParsingInformation)
 	}
 	value, ok := op.Value.(T)
 	if !ok {
-		return "", nil, ErrArgumentHasInvalidValue.New(a.name, value, reflect.TypeOf((*T)(nil)).Elem().String())
+		return "", nil, ErrArgumentHasInvalidValue.New(a.name, value, nameOfT[T]())
 	}
 	return a.name, value, nil
 }
@@ -82,7 +80,7 @@ func (a *extractingSlashCommandArgument[T]) Parse(info *ArgumentParsingInformati
 	}
 	valueId, ok := op.Value.(string)
 	if !ok {
-		return "", nil, ErrArgumentHasInvalidValue.New(a.name, valueId, reflect.TypeOf((*T)(nil)).Elem().String())
+		return "", nil, ErrArgumentHasInvalidValue.New(a.name, valueId, nameOfT[T]())
 	}
 	value, found := a.extract(info, valueId)
 	if !found {

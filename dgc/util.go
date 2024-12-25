@@ -1,6 +1,10 @@
 package dgc
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"reflect"
+
+	"github.com/bwmarrin/discordgo"
+)
 
 func removeElement[T comparable](slice []T, val T) []T {
 	for i, v := range slice {
@@ -28,4 +32,8 @@ func missingKeys[K comparable, V any](reference []K, actual map[K]V) []K {
 		}
 	}
 	return missing
+}
+
+func nameOfT[T any]() string {
+	return reflect.TypeOf((*T)(nil)).Elem().String()
 }
