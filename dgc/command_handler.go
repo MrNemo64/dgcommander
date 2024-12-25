@@ -16,6 +16,7 @@ type executionContext struct {
 	I                *discordgo.InteractionCreate
 	log              *slog.Logger
 	alreadyResponded bool
+	// TODO add things like time for the interaction to end
 }
 
 func (ctx *executionContext) respond(resp *discordgo.InteractionResponse) error {
