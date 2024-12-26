@@ -11,7 +11,7 @@ type ArgumentChoice[T any] struct {
 	Value T
 }
 
-type genericSlashCommandChoicesArgumentBuilder[T any, B specificCommandBuilder] struct {
+type genericSlashCommandChoicesArgumentBuilder[T any, B specificSlashCommandArgumentBuilder] struct {
 	upper   B
 	choices []ArgumentChoice[T]
 }
