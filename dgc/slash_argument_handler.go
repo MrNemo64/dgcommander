@@ -17,6 +17,7 @@ type SlashCommandArgument interface {
 	//  - ErrArgumentHasNoValue: if the value of this argument is not present.
 	//  - ErrArgumentHasInvalidValue: if the value of this argument has an invalid type.
 	Parse(info *ArgumentParsingInformation) (valueName string, value any, err error)
+	Name() string
 }
 
 type inlinedSlashCommandArgument[T any] struct{ name string }
@@ -32,6 +33,8 @@ func (a *inlinedSlashCommandArgument[T]) Parse(info *ArgumentParsingInformation)
 	}
 	return a.name, value, nil
 }
+
+func (a *inlinedSlashCommandArgument[T]) Name() string { return a.name }
 
 type BooleanSlashCommandArgument struct {
 	inlinedSlashCommandArgument[bool]
@@ -71,6 +74,8 @@ func (a *IntegerSlashCommandArgument) Parse(info *ArgumentParsingInformation) (s
 	return a.name, int64(value), nil
 }
 
+func (a *IntegerSlashCommandArgument) Name() string { return a.name }
+
 type extractingSlashCommandArgument[T any] struct{ name string }
 
 func (a *extractingSlashCommandArgument[T]) Parse(info *ArgumentParsingInformation) (string, any, error) {
@@ -88,6 +93,8 @@ func (a *extractingSlashCommandArgument[T]) Parse(info *ArgumentParsingInformati
 	}
 	return a.name, value, nil
 }
+
+func (a *extractingSlashCommandArgument[T]) Name() string { return a.name }
 
 func (a *extractingSlashCommandArgument[T]) extract(info *ArgumentParsingInformation, id string) (*T, bool) {
 	panic("extractingSlashCommandArgument#extract must be implemented")
@@ -195,3 +202,5 @@ func (a *MentionableSlashCommandArgument) Parse(info *ArgumentParsingInformation
 		return a.name, member, nil
 	}
 }
+
+func (a *MentionableSlashCommandArgument) Name() string { return a.name }

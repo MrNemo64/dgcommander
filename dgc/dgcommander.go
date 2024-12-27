@@ -13,6 +13,10 @@ type command interface {
 	manage(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate) (interactionAcknowledged bool, err error)
 }
 
+type autocomplete interface {
+	autocomplete(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate) (interactionAcknowledged bool, err error)
+}
+
 type DGCommander struct {
 	lock                  sync.RWMutex
 	commands              map[string]map[string]map[discordgo.ApplicationCommandType]command // Map of name -> guild/global -> type -> command
@@ -73,18 +77,24 @@ func (c *DGCommander) manageInteraction(ss *discordgo.Session, i *discordgo.Inte
 			c.respondError(ss, i.Interaction, interactionAcknowledged, err)
 		}
 	} else if i.Type == discordgo.InteractionApplicationCommandAutocomplete {
-		// data := i.ApplicationCommandData()
-		// c.lock.RLock()
-		// command, found := c.getCommandByNameInGuildAndType(data.Name, i.GuildID, discordgo.ChatApplicationCommand)
-		// c.lock.RUnlock()
-		// if !found {
-		// 	log.Info("Unknown application command autocompletion received", "received-command", data)
-		// 	c.respondError(ss, i.Interaction, false, fmt.Errorf("Unknown command"))
-		// 	return
-		// }
-		// if err := command.Autocomplete(log, sender, ss, i); err != nil {
-		// 	c.respondError(ss, i.Interaction, false, err)
-		// }
+		data := i.ApplicationCommandData()
+		c.lock.RLock()
+		command, found := c.getCommandByNameInGuildAndType(data.Name, i.GuildID, discordgo.ChatApplicationCommand)
+		c.lock.RUnlock()
+		if !found {
+			log.Info("Unknown application command autocompletion received", "received-command", data)
+			c.respondError(ss, i.Interaction, false, fmt.Errorf("Unknown command"))
+			return
+		}
+		ac, ok := command.(autocomplete)
+		if !ok {
+			log.Info("Received a request to autocomplete a non autocompletable command", "received-command", data)
+			c.respondError(ss, i.Interaction, false, fmt.Errorf("Cannot autocomplete"))
+		}
+		interactionAcknowledged, err := ac.autocomplete(log, sender, ss, i)
+		if err != nil {
+			c.respondError(ss, i.Interaction, interactionAcknowledged, err)
+		}
 	} else {
 		log.Warn("Unknown interaction type")
 	}

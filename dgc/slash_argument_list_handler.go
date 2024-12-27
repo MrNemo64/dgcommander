@@ -64,6 +64,19 @@ func (d *slashCommandArgumentListDefinition) parse(resolved *discordgo.Applicati
 	return list, nil
 }
 
+func (d *slashCommandArgumentListDefinition) autocompleteArgumentFor(option *discordgo.ApplicationCommandInteractionDataOption) SlashCommandAutocompleteArgument {
+	for _, arg := range d.arguments {
+		auto, ok := arg.(SlashCommandAutocompleteArgument)
+		if !ok {
+			continue
+		}
+		if auto.IsForOption(option) {
+			return auto
+		}
+	}
+	return nil
+}
+
 type slashCommandArgumentList struct {
 	values map[string]any
 }

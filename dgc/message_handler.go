@@ -11,11 +11,6 @@ var (
 	ErrMessageCommandHasNoMessage = errors.New("Message command was used but no message was given")
 )
 
-type MessageExecutionContext struct {
-	executionContext
-	Message *discordgo.Message
-}
-
 type MessageCommandHandler func(ctx *MessageExecutionContext, sender *discordgo.User) error
 
 type messageCommand struct {
@@ -30,10 +25,12 @@ func (c *messageCommand) manage(log *slog.Logger, sender *discordgo.User, ss *di
 		return false, ErrMessageCommandHasNoMessage
 	}
 	ctx := MessageExecutionContext{
-		executionContext: executionContext{
-			log:     log,
-			Session: ss,
-			I:       i,
+		respondingContext: respondingContext{
+			executionContext: executionContext{
+				log:     log,
+				Session: ss,
+				I:       i,
+			},
 		},
 		Message: message,
 	}

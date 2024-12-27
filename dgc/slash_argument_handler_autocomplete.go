@@ -1,46 +1,45 @@
 package dgc
 
+import "github.com/bwmarrin/discordgo"
+
 type SlashCommandAutocompleteArgument interface {
 	SlashCommandArgument
-	Autocomplete() any
+	IsForOption(option *discordgo.ApplicationCommandInteractionDataOption) bool
+	Autocomplete(*SlashAutocompleteContext) error
 }
 
-type SlashCommandAutocompleteArgumentHandler[T any] func() any
+type SlashCommandAutocompleteArgumentHandler func(*SlashAutocompleteContext) error
 
-type genericSlashCommandAutocompleteArgumentHandler[A SlashCommandArgument, T any] struct {
+type genericSlashCommandAutocompleteArgumentHandler[A SlashCommandArgument] struct {
 	arg     A
-	handler SlashCommandAutocompleteArgumentHandler[T]
+	handler SlashCommandAutocompleteArgumentHandler
+}
+
+func (arg *genericSlashCommandAutocompleteArgumentHandler[A]) IsForOption(option *discordgo.ApplicationCommandInteractionDataOption) bool {
+	return arg.arg.Name() == option.Name
+}
+
+func (arg *genericSlashCommandAutocompleteArgumentHandler[A]) Autocomplete(ctx *SlashAutocompleteContext) error {
+	return arg.handler(ctx)
 }
 
 // String
 
 type StringSlashCommandAutocompleteArgumentHandler struct {
 	StringSlashCommandArgument
-	handler SlashCommandAutocompleteArgumentHandler[string]
-}
-
-func (arg *StringSlashCommandAutocompleteArgumentHandler) Autocomplete() any {
-	return arg.handler()
+	genericSlashCommandAutocompleteArgumentHandler[*StringSlashCommandAutocompleteArgumentHandler]
 }
 
 // Integer
 
 type IntegerSlashCommandAutocompleteArgumentHandler struct {
 	IntegerSlashCommandArgument
-	handler SlashCommandAutocompleteArgumentHandler[int64]
-}
-
-func (arg *IntegerSlashCommandAutocompleteArgumentHandler) Autocomplete() any {
-	return arg.handler()
+	genericSlashCommandAutocompleteArgumentHandler[*IntegerSlashCommandAutocompleteArgumentHandler]
 }
 
 // Number
 
 type NumberSlashCommandAutocompleteArgumentHandler struct {
 	NumberSlashCommandArgument
-	handler SlashCommandAutocompleteArgumentHandler[float64]
-}
-
-func (arg *NumberSlashCommandAutocompleteArgumentHandler) Autocomplete() any {
-	return arg.handler()
+	genericSlashCommandAutocompleteArgumentHandler[*NumberSlashCommandAutocompleteArgumentHandler]
 }

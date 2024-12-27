@@ -2,18 +2,18 @@ package dgc
 
 import "github.com/bwmarrin/discordgo"
 
-type genericSlashCommandAutocompleteArgumentBuilder[T any, B specificSlashCommandArgumentBuilder] struct {
+type genericSlashCommandAutocompleteArgumentBuilder[B specificSlashCommandArgumentBuilder] struct {
 	genericSlashCommandArgumentBuilder[B]
-	handler SlashCommandAutocompleteArgumentHandler[T]
+	handler SlashCommandAutocompleteArgumentHandler
 }
 
-func (b *genericSlashCommandAutocompleteArgumentBuilder[T, B]) discordDefineForCreation() *discordgo.ApplicationCommandOption {
+func (b *genericSlashCommandAutocompleteArgumentBuilder[B]) discordDefineForCreation() *discordgo.ApplicationCommandOption {
 	d := b.genericSlashCommandArgumentBuilder.DiscordDefineForCreation()
 	d.Autocomplete = true
 	return d
 }
 
-func (b *genericSlashCommandAutocompleteArgumentBuilder[T, B]) Handler(handler SlashCommandAutocompleteArgumentHandler[T]) B {
+func (b *genericSlashCommandAutocompleteArgumentBuilder[B]) Handler(handler SlashCommandAutocompleteArgumentHandler) B {
 	b.handler = handler
 	return b.upper
 }
@@ -21,16 +21,20 @@ func (b *genericSlashCommandAutocompleteArgumentBuilder[T, B]) Handler(handler S
 // String
 
 type stringSlashCommandAutocompleteArgumentBuilder struct {
-	genericSlashCommandAutocompleteArgumentBuilder[string, *stringSlashCommandAutocompleteArgumentBuilder]
+	genericSlashCommandAutocompleteArgumentBuilder[*stringSlashCommandAutocompleteArgumentBuilder]
 }
 
 func (b *stringSlashCommandAutocompleteArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &StringSlashCommandAutocompleteArgumentHandler{
+	arg := &StringSlashCommandAutocompleteArgumentHandler{
 		StringSlashCommandArgument: StringSlashCommandArgument{
 			inlinedSlashCommandArgument[string]{b.name},
 		},
-		handler: b.handler,
+		genericSlashCommandAutocompleteArgumentHandler: genericSlashCommandAutocompleteArgumentHandler[*StringSlashCommandAutocompleteArgumentHandler]{
+			handler: b.handler,
+		},
 	}
+	arg.genericSlashCommandAutocompleteArgumentHandler.arg = arg
+	return arg
 }
 
 func NewStringAutocompleteArgument() *stringSlashCommandAutocompleteArgumentBuilder {
@@ -43,16 +47,20 @@ func NewStringAutocompleteArgument() *stringSlashCommandAutocompleteArgumentBuil
 // Integer
 
 type integerSlashCommandAutocompleteArgumentBuilder struct {
-	genericSlashCommandAutocompleteArgumentBuilder[int64, *integerSlashCommandAutocompleteArgumentBuilder]
+	genericSlashCommandAutocompleteArgumentBuilder[*integerSlashCommandAutocompleteArgumentBuilder]
 }
 
 func (b *integerSlashCommandAutocompleteArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &IntegerSlashCommandAutocompleteArgumentHandler{
+	arg := &IntegerSlashCommandAutocompleteArgumentHandler{
 		IntegerSlashCommandArgument: IntegerSlashCommandArgument{
 			name: b.name,
 		},
-		handler: b.handler,
+		genericSlashCommandAutocompleteArgumentHandler: genericSlashCommandAutocompleteArgumentHandler[*IntegerSlashCommandAutocompleteArgumentHandler]{
+			handler: b.handler,
+		},
 	}
+	arg.genericSlashCommandAutocompleteArgumentHandler.arg = arg
+	return arg
 }
 
 func NewIntegerAutocompleteArgument() *integerSlashCommandAutocompleteArgumentBuilder {
@@ -65,16 +73,20 @@ func NewIntegerAutocompleteArgument() *integerSlashCommandAutocompleteArgumentBu
 // Number
 
 type numberSlashCommandAutocompleteArgumentBuilder struct {
-	genericSlashCommandAutocompleteArgumentBuilder[float64, *numberSlashCommandAutocompleteArgumentBuilder]
+	genericSlashCommandAutocompleteArgumentBuilder[*numberSlashCommandAutocompleteArgumentBuilder]
 }
 
 func (b *numberSlashCommandAutocompleteArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &NumberSlashCommandAutocompleteArgumentHandler{
+	arg := &NumberSlashCommandAutocompleteArgumentHandler{
 		NumberSlashCommandArgument: NumberSlashCommandArgument{
 			inlinedSlashCommandArgument[float64]{b.name},
 		},
-		handler: b.handler,
+		genericSlashCommandAutocompleteArgumentHandler: genericSlashCommandAutocompleteArgumentHandler[*NumberSlashCommandAutocompleteArgumentHandler]{
+			handler: b.handler,
+		},
 	}
+	arg.genericSlashCommandAutocompleteArgumentHandler.arg = arg
+	return arg
 }
 
 func NewNumberAutocompleteArgument() *numberSlashCommandAutocompleteArgumentBuilder {
