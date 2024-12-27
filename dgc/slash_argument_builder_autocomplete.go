@@ -7,7 +7,7 @@ type genericSlashCommandAutocompleteArgumentBuilder[B specificSlashCommandArgume
 	handler SlashCommandAutocompleteArgumentHandler
 }
 
-func (b *genericSlashCommandAutocompleteArgumentBuilder[B]) discordDefineForCreation() *discordgo.ApplicationCommandOption {
+func (b *genericSlashCommandAutocompleteArgumentBuilder[B]) DiscordDefineForCreation() *discordgo.ApplicationCommandOption {
 	d := b.genericSlashCommandArgumentBuilder.DiscordDefineForCreation()
 	d.Autocomplete = true
 	return d
