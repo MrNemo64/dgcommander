@@ -75,6 +75,17 @@ func main() {
 					extras.NewDurationArgument().Name("duration").Description("Task duration").Required(false),
 				).
 				Handler(createTask),
+			).
+			AddSubCommand(dgc.NewSubCommand().
+				Name("edit").
+				Description("Edit a task").
+				AddArguments(
+					taskSelectArg,
+					dgc.NewStringArgument().Name("name").Description("Task name").Required(false),
+					dgc.NewStringArgument().Name("description").Description("Task description").Required(false),
+					extras.NewDurationArgument().Name("duration").Description("Task duration").Required(false),
+				).
+				Handler(editTask),
 			),
 	)
 	if err != nil {
@@ -163,6 +174,30 @@ func createTask(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
 	task := list.createTask(name, description, duration)
 	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
 		Content: fmt.Sprintf("Created task with id %d", task.id),
+		Embeds:  []*discordgo.MessageEmbed{task.toEmbed()},
+	})
+}
+
+func editTask(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
+	list := repo.getUserTasks(sender.ID)
+	selectedTaskId := ctx.GetRequiredInteger("task")
+	task := list.findTask(selectedTaskId)
+	if task == nil {
+		return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("The task with id %d does not exist", selectedTaskId),
+		})
+	}
+	task.name = ctx.GetStringOr("name", task.name)
+	task.description = ctx.GetStringOr("description", task.description)
+	if durationv, found := dgc.GetArgument[time.Duration](ctx, "duration"); found {
+		if durationv > 0 {
+			task.duration = &durationv
+		} else {
+			task.duration = nil
+		}
+	}
+	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
+		Content: "Task updated",
 		Embeds:  []*discordgo.MessageEmbed{task.toEmbed()},
 	})
 }
