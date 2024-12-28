@@ -1,11 +1,17 @@
 # Auto-generated Makefile. Do not edit manually.
 
 generate.makefile-debug:
-	go run tools/makefile_debug/main.go
+	cd tools/makefile_debug && go run .
+
+delete.commands:
+	cd tools/delete_commands && go run .
 
 example.message:
-	go run examples/message/main.go
+	cd examples/message && go run .
 
 example.slash-calculator:
-	go run examples/slash-calculator/main.go
+	cd examples/slash-calculator && go run .
+
+example.tasks:
+	cd examples/tasks && go run .
 

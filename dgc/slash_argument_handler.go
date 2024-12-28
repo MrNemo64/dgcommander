@@ -29,7 +29,16 @@ func (a *inlinedSlashCommandArgument[T]) Parse(info *ArgumentParsingInformation)
 	}
 	value, ok := op.Value.(T)
 	if !ok {
-		return "", nil, ErrArgumentHasInvalidValue.New(a.name, value, nameOfT[T]())
+		if !info.Autocompleting {
+			return "", nil, ErrArgumentHasInvalidValue.New(a.name, op.Value, nameOfT[T]())
+		}
+		// if we are autocompleting, a string is technically considered a valid value
+		// since the user can type whatever for us to autocomplete
+		values, ok := op.Value.(string)
+		if !ok {
+			return "", nil, ErrArgumentHasInvalidValue.New(a.name, op.Value, nameOfT[T]())
+		}
+		return a.name, values, nil
 	}
 	return a.name, value, nil
 }
@@ -69,43 +78,55 @@ func (a *IntegerSlashCommandArgument) Parse(info *ArgumentParsingInformation) (s
 	}
 	value, ok := op.Value.(float64)
 	if !ok {
-		return "", nil, ErrArgumentHasInvalidValue.New(a.name, value, "int64")
+		if !info.Autocompleting {
+			return "", nil, ErrArgumentHasInvalidValue.New(a.name, op.Value, "int64")
+		}
+		// if we are autocompleting, a string is technically considered a valid value
+		// since the user can type whatever for us to autocomplete
+		values, ok := op.Value.(string)
+		if !ok {
+			return "", nil, ErrArgumentHasInvalidValue.New(a.name, op.Value, "int64")
+		}
+		return a.name, values, nil
 	}
 	return a.name, int64(value), nil
 }
 
 func (a *IntegerSlashCommandArgument) Name() string { return a.name }
 
-type extractingSlashCommandArgument[T any] struct{ name string }
+type specificExtractingSlashCommandArgument[T any] interface {
+	extract(info *ArgumentParsingInformation, id string) (*T, bool)
+}
 
-func (a *extractingSlashCommandArgument[T]) Parse(info *ArgumentParsingInformation) (string, any, error) {
+type genericExtractingSlashCommandArgument[T any, S specificExtractingSlashCommandArgument[T]] struct {
+	specific S
+	name     string
+}
+
+func (a *genericExtractingSlashCommandArgument[T, S]) Parse(info *ArgumentParsingInformation) (string, any, error) {
 	op := info.FindOption(a.name)
 	if op == nil {
 		return "", nil, ErrArgumentHasNoValue.New(a.name)
 	}
 	valueId, ok := op.Value.(string)
 	if !ok {
-		return "", nil, ErrArgumentHasInvalidValue.New(a.name, valueId, nameOfT[T]())
+		return "", nil, ErrArgumentHasInvalidValue.New(a.name, op.Value, nameOfT[T]())
 	}
-	value, found := a.extract(info, valueId)
+	value, found := a.specific.extract(info, valueId)
 	if !found {
 		return "", nil, ErrArgumentHasNoValue.New(a.name)
 	}
 	return a.name, value, nil
 }
 
-func (a *extractingSlashCommandArgument[T]) Name() string { return a.name }
-
-func (a *extractingSlashCommandArgument[T]) extract(info *ArgumentParsingInformation, id string) (*T, bool) {
-	panic("extractingSlashCommandArgument#extract must be implemented")
-}
+func (a *genericExtractingSlashCommandArgument[T, S]) Name() string { return a.name }
 
 type ChannelSlashCommandArgument struct {
-	extractingSlashCommandArgument[discordgo.Channel]
+	genericExtractingSlashCommandArgument[discordgo.Channel, *ChannelSlashCommandArgument]
 }
 
 func (b *ChannelSlashCommandArgument) Parse(info *ArgumentParsingInformation) (string, any, error) {
-	return b.extractingSlashCommandArgument.Parse(info)
+	return b.genericExtractingSlashCommandArgument.Parse(info)
 }
 
 func (ChannelSlashCommandArgument) extract(info *ArgumentParsingInformation, id string) (*discordgo.Channel, bool) {
@@ -114,11 +135,11 @@ func (ChannelSlashCommandArgument) extract(info *ArgumentParsingInformation, id 
 }
 
 type AttachmentSlashCommandArgument struct {
-	extractingSlashCommandArgument[discordgo.MessageAttachment]
+	genericExtractingSlashCommandArgument[discordgo.MessageAttachment, *AttachmentSlashCommandArgument]
 }
 
 func (b *AttachmentSlashCommandArgument) Parse(info *ArgumentParsingInformation) (string, any, error) {
-	return b.extractingSlashCommandArgument.Parse(info)
+	return b.genericExtractingSlashCommandArgument.Parse(info)
 }
 
 func (AttachmentSlashCommandArgument) extract(info *ArgumentParsingInformation, id string) (*discordgo.MessageAttachment, bool) {
@@ -127,11 +148,11 @@ func (AttachmentSlashCommandArgument) extract(info *ArgumentParsingInformation, 
 }
 
 type UserSlashCommandArgument struct {
-	extractingSlashCommandArgument[discordgo.User]
+	genericExtractingSlashCommandArgument[discordgo.User, *UserSlashCommandArgument]
 }
 
 func (b *UserSlashCommandArgument) Parse(info *ArgumentParsingInformation) (string, any, error) {
-	return b.extractingSlashCommandArgument.Parse(info)
+	return b.genericExtractingSlashCommandArgument.Parse(info)
 }
 
 func (UserSlashCommandArgument) extract(info *ArgumentParsingInformation, id string) (*discordgo.User, bool) {
@@ -140,11 +161,11 @@ func (UserSlashCommandArgument) extract(info *ArgumentParsingInformation, id str
 }
 
 type RoleSlashCommandArgument struct {
-	extractingSlashCommandArgument[discordgo.Role]
+	genericExtractingSlashCommandArgument[discordgo.Role, *RoleSlashCommandArgument]
 }
 
 func (b *RoleSlashCommandArgument) Parse(info *ArgumentParsingInformation) (string, any, error) {
-	return b.extractingSlashCommandArgument.Parse(info)
+	return b.genericExtractingSlashCommandArgument.Parse(info)
 }
 
 func (RoleSlashCommandArgument) extract(info *ArgumentParsingInformation, id string) (*discordgo.Role, bool) {
@@ -153,11 +174,11 @@ func (RoleSlashCommandArgument) extract(info *ArgumentParsingInformation, id str
 }
 
 type MemberSlashCommandArgument struct {
-	extractingSlashCommandArgument[discordgo.Member]
+	genericExtractingSlashCommandArgument[discordgo.Member, *MemberSlashCommandArgument]
 }
 
 func (b *MemberSlashCommandArgument) Parse(info *ArgumentParsingInformation) (string, any, error) {
-	return b.extractingSlashCommandArgument.Parse(info)
+	return b.genericExtractingSlashCommandArgument.Parse(info)
 }
 
 func (MemberSlashCommandArgument) extract(info *ArgumentParsingInformation, id string) (*discordgo.Member, bool) {
@@ -184,7 +205,7 @@ func (a *MentionableSlashCommandArgument) Parse(info *ArgumentParsingInformation
 	}
 	valueId, ok := op.Value.(string)
 	if !ok {
-		return "", nil, ErrArgumentHasInvalidValue.New(a.name, valueId, "mentionable")
+		return "", nil, ErrArgumentHasInvalidValue.New(a.name, op.Value, "mentionable")
 	}
 	role, found := info.Resolved.Roles[valueId]
 	if found {

@@ -42,7 +42,7 @@ func (c *simpleSlashCommand) autocomplete(log *slog.Logger, sender *discordgo.Us
 }
 
 func (c *simpleSlashCommand) doManage(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
-	args, err := c.args.parse(i.ApplicationCommandData().Resolved, options)
+	args, err := c.args.parse(i.ApplicationCommandData().Resolved, options, false)
 	if err != nil {
 		return false, err
 	}
@@ -65,14 +65,19 @@ func (c *simpleSlashCommand) doAutocomplete(log *slog.Logger, sender *discordgo.
 	if err != nil {
 		return false, err
 	}
+	args, err := c.args.parse(i.ApplicationCommandData().Resolved, options, true)
+	if err != nil {
+		return false, err
+	}
 	ctx := SlashAutocompleteContext{
 		executionContext: executionContext{
 			log:     log,
 			Session: ss,
 			I:       i,
 		},
+		slashCommandArgumentList: args,
 	}
-	if err := arg.Autocomplete(&ctx); err != nil {
+	if err := arg.Autocomplete(sender, &ctx); err != nil {
 		return false, err
 	}
 	choices := ctx.makeChoices()

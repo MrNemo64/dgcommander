@@ -78,6 +78,7 @@ type SlashExecutionContext struct {
 
 type SlashAutocompleteContext struct {
 	executionContext
+	slashCommandArgumentList
 	choices []*discordgo.ApplicationCommandOptionChoice
 }
 

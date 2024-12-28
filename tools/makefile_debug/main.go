@@ -8,9 +8,9 @@ import (
 )
 
 func main() {
-	examplesDir := "examples"
-	makefile := "Makefile"
-	launchFile := ".vscode/launch.json"
+	examplesDir := "../../examples"
+	makefile := "../../Makefile"
+	launchFile := "../../.vscode/launch.json"
 
 	// Gather example directories
 	dirs, err := os.ReadDir(examplesDir)
@@ -30,10 +30,12 @@ func main() {
 	var makefileContent bytes.Buffer
 	makefileContent.WriteString("# Auto-generated Makefile. Do not edit manually.\n\n")
 	makefileContent.WriteString("generate.makefile-debug:\n")
-	makefileContent.WriteString("\tgo run tools/makefile_debug/main.go\n\n")
+	makefileContent.WriteString("\tcd tools/makefile_debug && go run .\n\n")
+	makefileContent.WriteString("delete.commands:\n")
+	makefileContent.WriteString("\tcd tools/delete_commands && go run .\n\n")
 	for _, example := range examples {
 		makefileContent.WriteString(fmt.Sprintf("example.%s:\n", example))
-		makefileContent.WriteString(fmt.Sprintf("\tgo run examples/%s/main.go\n\n", example))
+		makefileContent.WriteString(fmt.Sprintf("\tcd examples/%s && go run .\n\n", example))
 	}
 
 	// Write Makefile
@@ -58,9 +60,9 @@ func main() {
       "type": "go",
       "request": "launch",
       "mode": "auto",
-      "program": "examples/%s/main.go",
-      "cwd": "${cwd}"
-    }`, title(example), example))
+      "program": "examples/%s",
+      "cwd": "examples/%s"
+    }`, title(example), example, example))
 	}
 	launchConfig += strings.Join(launchConfigurations, ",\n")
 	launchConfig += "\n  ]\n}"

@@ -203,7 +203,13 @@ func NewUserArgument() *userSlashCommandArgumentBuilder {
 }
 
 func (b *userSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &UserSlashCommandArgument{extractingSlashCommandArgument[discordgo.User]{b.name}}
+	a := &UserSlashCommandArgument{
+		genericExtractingSlashCommandArgument: genericExtractingSlashCommandArgument[discordgo.User, *UserSlashCommandArgument]{
+			name: b.name,
+		},
+	}
+	a.genericExtractingSlashCommandArgument.specific = a
+	return a
 }
 
 // Role
@@ -220,7 +226,13 @@ func NewRoleArgument() *roleSlashCommandArgumentBuilder {
 }
 
 func (b *roleSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &RoleSlashCommandArgument{extractingSlashCommandArgument[discordgo.Role]{b.name}}
+	a := &RoleSlashCommandArgument{
+		genericExtractingSlashCommandArgument: genericExtractingSlashCommandArgument[discordgo.Role, *RoleSlashCommandArgument]{
+			name: b.name,
+		},
+	}
+	a.genericExtractingSlashCommandArgument.specific = a
+	return a
 }
 
 // Mentionable
@@ -254,7 +266,13 @@ func NewAttachmentArgument() *attachmentSlashCommandArgumentBuilder {
 }
 
 func (b *attachmentSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &AttachmentSlashCommandArgument{extractingSlashCommandArgument[discordgo.MessageAttachment]{b.name}}
+	a := &AttachmentSlashCommandArgument{
+		genericExtractingSlashCommandArgument: genericExtractingSlashCommandArgument[discordgo.MessageAttachment, *AttachmentSlashCommandArgument]{
+			name: b.name,
+		},
+	}
+	a.genericExtractingSlashCommandArgument.specific = a
+	return a
 }
 
 // Channel
@@ -278,7 +296,13 @@ func (b *channelSlashCommandArgumentBuilder) DiscordDefineForCreation() *discord
 }
 
 func (b *channelSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &ChannelSlashCommandArgument{extractingSlashCommandArgument[discordgo.Channel]{b.name}}
+	a := &ChannelSlashCommandArgument{
+		genericExtractingSlashCommandArgument: genericExtractingSlashCommandArgument[discordgo.Channel, *ChannelSlashCommandArgument]{
+			name: b.name,
+		},
+	}
+	a.genericExtractingSlashCommandArgument.specific = a
+	return a
 }
 
 func (b *channelSlashCommandArgumentBuilder) AllowChannel(channel discordgo.ChannelType) *channelSlashCommandArgumentBuilder {

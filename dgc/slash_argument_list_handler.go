@@ -21,8 +21,9 @@ type slashCommandArgumentListDefinition struct {
 }
 
 type ArgumentParsingInformation struct {
-	Options  []*discordgo.ApplicationCommandInteractionDataOption
-	Resolved *discordgo.ApplicationCommandInteractionDataResolved
+	Options        []*discordgo.ApplicationCommandInteractionDataOption
+	Resolved       *discordgo.ApplicationCommandInteractionDataResolved
+	Autocompleting bool
 }
 
 // Searches for an option in the slice of options with the same name, returning the first one found, nil if not found
@@ -35,10 +36,10 @@ func (api *ArgumentParsingInformation) FindOption(name string) *discordgo.Applic
 	return nil
 }
 
-func (d *slashCommandArgumentListDefinition) parse(resolved *discordgo.ApplicationCommandInteractionDataResolved, options []*discordgo.ApplicationCommandInteractionDataOption) (slashCommandArgumentList, error) {
+func (d *slashCommandArgumentListDefinition) parse(resolved *discordgo.ApplicationCommandInteractionDataResolved, options []*discordgo.ApplicationCommandInteractionDataOption, autocompleting bool) (slashCommandArgumentList, error) {
 	var allErrors []error
 	list := slashCommandArgumentList{values: make(map[string]any)}
-	parseInfo := ArgumentParsingInformation{Options: options, Resolved: resolved}
+	parseInfo := ArgumentParsingInformation{Options: options, Resolved: resolved, Autocompleting: autocompleting}
 	for _, argument := range d.arguments {
 		name, value, err := argument.Parse(&parseInfo)
 		if err != nil {
@@ -49,15 +50,19 @@ func (d *slashCommandArgumentListDefinition) parse(resolved *discordgo.Applicati
 		}
 		list.values[name] = value
 	}
-	missingRequired := missingKeys(d.required, list.values)
-	if len(missingRequired) > 0 {
-		err := ErrMissingRequiredArguments.withArgs(missingRequired)
-		if len(allErrors) > 0 {
-			allErrors = append([]error{err}, allErrors...)
-		} else {
-			allErrors = []error{err}
+
+	if !autocompleting {
+		missingRequired := missingKeys(d.required, list.values)
+		if len(missingRequired) > 0 {
+			err := ErrMissingRequiredArguments.withArgs(missingRequired)
+			if len(allErrors) > 0 {
+				allErrors = append([]error{err}, allErrors...)
+			} else {
+				allErrors = []error{err}
+			}
 		}
 	}
+
 	if len(allErrors) > 0 {
 		return list, errors.Join(allErrors...)
 	}

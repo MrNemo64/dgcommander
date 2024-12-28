@@ -14,7 +14,7 @@ import (
 
 func main() {
 	fmt.Println("Starting messages example")
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("../../.env"); err != nil {
 		panic(err)
 	}
 
@@ -39,6 +39,12 @@ func main() {
 		panic(err)
 	}
 
+	defer func() {
+		if err := ss.ApplicationCommandDelete(ss.State.User.ID, cmd.GuildID, cmd.ID); err != nil {
+			panic(err)
+		}
+	}()
+
 	fmt.Println("Running")
 
 	sigChan := make(chan os.Signal, 1)
@@ -46,10 +52,6 @@ func main() {
 	<-sigChan
 
 	fmt.Println("Clossing")
-
-	if err := ss.ApplicationCommandDelete(ss.State.User.ID, cmd.GuildID, cmd.ID); err != nil {
-		panic(err)
-	}
 }
 
 func handleResend(ctx *dgc.MessageExecutionContext, sender *discordgo.User) error {

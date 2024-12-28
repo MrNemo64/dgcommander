@@ -2,6 +2,38 @@ package dgc
 
 import "github.com/bwmarrin/discordgo"
 
+// Generic
+
+func GetRequiredArgument[T any](ctx *SlashExecutionContext, name string) T {
+	arg, found := ctx.slashCommandArgumentList.values[name]
+	if !found {
+		panic(ErrMissingRequiredArgument.withArgs(nameOfT[T](), name))
+	}
+	if value, ok := arg.(T); ok {
+		return value
+	}
+	panic(ErrArgumentIsWrongType.withArgs(nameOfT[T](), name, arg, arg))
+}
+
+func GetArgument[T any](ctx *SlashExecutionContext, name string) (value T, found bool) {
+	arg, found := ctx.slashCommandArgumentList.values[name]
+	if !found {
+		var zero T
+		return zero, false
+	}
+	if value, ok := arg.(T); ok {
+		return value, true
+	}
+	panic(ErrArgumentIsWrongType.withArgs(nameOfT[T](), name, arg, arg))
+}
+
+func GetArgumentOr[T any](ctx *SlashExecutionContext, name string, def T) T {
+	if value, found := GetArgument[T](ctx, name); found {
+		return value
+	}
+	return def
+}
+
 // Boolean
 
 func (args *slashCommandArgumentList) GetRequiredBool(name string) bool {

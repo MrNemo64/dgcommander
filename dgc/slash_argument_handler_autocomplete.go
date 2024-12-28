@@ -5,10 +5,10 @@ import "github.com/bwmarrin/discordgo"
 type SlashCommandAutocompleteArgument interface {
 	SlashCommandArgument
 	IsForOption(option *discordgo.ApplicationCommandInteractionDataOption) bool
-	Autocomplete(*SlashAutocompleteContext) error
+	Autocomplete(*discordgo.User, *SlashAutocompleteContext) error
 }
 
-type SlashCommandAutocompleteArgumentHandler func(*SlashAutocompleteContext) error
+type SlashCommandAutocompleteArgumentHandler func(*discordgo.User, *SlashAutocompleteContext) error
 
 type genericSlashCommandAutocompleteArgumentHandler[A SlashCommandArgument] struct {
 	arg     A
@@ -19,8 +19,8 @@ func (arg *genericSlashCommandAutocompleteArgumentHandler[A]) IsForOption(option
 	return arg.arg.Name() == option.Name
 }
 
-func (arg *genericSlashCommandAutocompleteArgumentHandler[A]) Autocomplete(ctx *SlashAutocompleteContext) error {
-	return arg.handler(ctx)
+func (arg *genericSlashCommandAutocompleteArgumentHandler[A]) Autocomplete(sender *discordgo.User, ctx *SlashAutocompleteContext) error {
+	return arg.handler(sender, ctx)
 }
 
 // String
