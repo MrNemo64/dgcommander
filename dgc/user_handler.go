@@ -23,6 +23,7 @@ func (c *userCommand) execute(info *InvokationInformation) (bool, error) {
 	}
 	member, found := data.Resolved.Members[targetUser]
 	if found {
+		member.GuildID = info.I.GuildID
 		member.User = user
 	}
 	ctx := UserExecutionContext{

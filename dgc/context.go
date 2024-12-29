@@ -20,7 +20,10 @@ type executionContext struct {
 	timer        *time.Timer
 	ctx          context.Context
 	cancelCtx    context.CancelFunc
-	// TODO add info about context like if running on a guild/dm
+	// TODO add info about
+	// - context like if running on a guild/dm
+	// - channel where we are being run
+	// - locale about the sender
 }
 
 func newExecutionContext(info *InvokationInformation) *executionContext {

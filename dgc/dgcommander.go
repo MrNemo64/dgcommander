@@ -36,6 +36,7 @@ type DefaultTimeProvider struct{}
 func (DefaultTimeProvider) Now() time.Time { return time.Now() }
 
 type DGCommander struct {
+	// TODO add some kind of middleware to commands
 	lock         sync.RWMutex
 	commands     map[string]map[string]map[discordgo.ApplicationCommandType]command // Map of name -> guild/global -> type -> command
 	session      *discordgo.Session
@@ -85,7 +86,7 @@ func (c *DGCommander) manageInteraction(ss *discordgo.Session, i *discordgo.Inte
 	if info.Sender == nil {
 		info.Sender = i.Interaction.Member.User
 	}
-	info.log = c.log.With("sender", info.Sender.ID, "interaction", i.Interaction) // TODO
+	info.log = c.log.With("sender", info.Sender.ID) // TODO add information about the interaction to be able to identify it
 	if i.Type == discordgo.InteractionApplicationCommand {
 		data := i.ApplicationCommandData()
 		c.lock.RLock()
