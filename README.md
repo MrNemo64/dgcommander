@@ -20,83 +20,83 @@ by the time we get to the handler, an argument with that shape will be present
 commander := dgc.New(slog.Default(), session, dgc.DefaultTimeProvider{})
 
 commander.AddCommand(
-	dgc.NewMessageCommand(). // Commands on messages
+    dgc.NewMessageCommand(). // Commands on messages
         Name("Resend message").
         AllowEverywhere(true).
         Handler(func(ctx *dgc.MessageExecutionContext) error {
-				defer ctx.Finish() // Stops the internal timer that updates the ctx to know if an interaction is still valid
-				return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
-					Content: ctx.Message.Content,
-					Embeds:  ctx.Message.Embeds,
-				})
-			}),
+                defer ctx.Finish() // Stops the internal timer that updates the ctx to know if an interaction is still valid
+                return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
+                    Content: ctx.Message.Content,
+                    Embeds:  ctx.Message.Embeds,
+                })
+            }),
 )
 commander.AddCommand(
-	dgc.NewUserCommand(). // Commands on users
+    dgc.NewUserCommand(). // Commands on users
         Name("User information").
         AllowEverywhere(true).
         Handler(func(ctx *dgc.UserExecutionContext) error {
-				defer ctx.Finish()
-				return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
-					Content: "User information",
-					Embeds: []*discordgo.MessageEmbed{{
-						Title: ctx.User.Username,
-						Color: ctx.User.AccentColor,
-						Image: &discordgo.MessageEmbedImage{
-							URL: ctx.User.AvatarURL(""),
-						},
-						Fields: []*discordgo.MessageEmbedField{{
-							Name:  "Bot?",
-							Value: fmt.Sprintf("%t", ctx.User.Bot),
-						}},
-					}},
-				})
-			}),
+                defer ctx.Finish()
+                return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
+                    Content: "User information",
+                    Embeds: []*discordgo.MessageEmbed{{
+                        Title: ctx.User.Username,
+                        Color: ctx.User.AccentColor,
+                        Image: &discordgo.MessageEmbedImage{
+                            URL: ctx.User.AvatarURL(""),
+                        },
+                        Fields: []*discordgo.MessageEmbedField{{
+                            Name:  "Bot?",
+                            Value: fmt.Sprintf("%t", ctx.User.Bot),
+                        }},
+                    }},
+                })
+            }),
 )
 commander.AddCommand(
-	dgc.NewMultiSlashCommandBuilder(). // Chat/Slash commands
-		Name("calculate").
-		Description("Collection of simple operations").
-		AllowEverywhere(true).
-		AddSubCommand(dgc.NewSubCommand().
-			Name("sum").
-			Description("Calculates the sum of 2 numbers `a+b`").
-			AddArguments(
-				dgc.NewNumberArgument().Name("a").Description("First value of the sum").Required(true),
-				dgc.NewNumberArgument().Name("b").Description("Seccond value of the sum").Required(true),
-			).
-			Handler(func(ctx *dgc.SlashExecutionContext) error {
-					defer ctx.Finish()
-					a := ctx.GetRequiredNumber("a")
-					b := ctx.GetRequiredNumber("b")
-					return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
-						Content: fmt.Sprintf("The result of `%.2f + %.2f` is `%.2f`", a, b, a+b),
-					})
-				}),
-		).
-		AddSubCommandGroup(dgc.NewSubCommandGroup().
-			Name("trigonometry").
-			Description("Trigonometry related functions").
-			AddSubCommand(dgc.NewSubCommand().
-				Name("sin").
-				Description("Calculates the sin of the given angle").
-				AddArguments(
-					dgc.NewNumberArgument().Name("angle").Description("The angle to calculate the sin").Required(true),
-					dgc.NewNumberChoicesArgument().Name("degree").Description("Degree of type to calculate").Required(false).
-						AddChoice("degrees", math.Pi/180.01).
-						AddChoice("radians", 1),
-				).
-				Handler(func(ctx *dgc.SlashExecutionContext) error {
-						defer ctx.Finish()
-						angle := ctx.GetRequiredNumber("angle")
-						degree := ctx.GetNumberOr("degree", 1) // default is radians
-						angle *= degree
-						return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
-							Content: fmt.Sprintf("The `sin(%.2f)` is `%.2f`", angle, math.Sin(angle)),
-						})
-					}),
-			),
-		),
+    dgc.NewMultiSlashCommandBuilder(). // Chat/Slash commands
+        Name("calculate").
+        Description("Collection of simple operations").
+        AllowEverywhere(true).
+        AddSubCommand(dgc.NewSubCommand().
+            Name("sum").
+            Description("Calculates the sum of 2 numbers `a+b`").
+            AddArguments(
+                dgc.NewNumberArgument().Name("a").Description("First value of the sum").Required(true),
+                dgc.NewNumberArgument().Name("b").Description("Seccond value of the sum").Required(true),
+            ).
+            Handler(func(ctx *dgc.SlashExecutionContext) error {
+                    defer ctx.Finish()
+                    a := ctx.GetRequiredNumber("a")
+                    b := ctx.GetRequiredNumber("b")
+                    return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
+                        Content: fmt.Sprintf("The result of `%.2f + %.2f` is `%.2f`", a, b, a+b),
+                    })
+                }),
+        ).
+        AddSubCommandGroup(dgc.NewSubCommandGroup().
+            Name("trigonometry").
+            Description("Trigonometry related functions").
+            AddSubCommand(dgc.NewSubCommand().
+                Name("sin").
+                Description("Calculates the sin of the given angle").
+                AddArguments(
+                    dgc.NewNumberArgument().Name("angle").Description("The angle to calculate the sin").Required(true),
+                    dgc.NewNumberChoicesArgument().Name("degree").Description("Degree of type to calculate").Required(false).
+                        AddChoice("degrees", math.Pi/180.01).
+                        AddChoice("radians", 1),
+                ).
+                Handler(func(ctx *dgc.SlashExecutionContext) error {
+                        defer ctx.Finish()
+                        angle := ctx.GetRequiredNumber("angle")
+                        degree := ctx.GetNumberOr("degree", 1) // default is radians
+                        angle *= degree
+                        return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
+                            Content: fmt.Sprintf("The `sin(%.2f)` is `%.2f`", angle, math.Sin(angle)),
+                        })
+                    }),
+            ),
+        ),
 )
 ```
 
