@@ -1,8 +1,6 @@
 package dgc
 
 import (
-	"log/slog"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -15,7 +13,7 @@ var (
 	ErrNoAutocompletingArgumentForOption = makeError("no autocomplete argument found for the option %+v")
 )
 
-type SlashCommandHandler func(sender *discordgo.User, ctx *SlashExecutionContext) error
+type SlashCommandHandler func(ctx *SlashExecutionContext) error
 
 type slashCommand interface {
 	command
@@ -24,8 +22,8 @@ type slashCommand interface {
 
 type genericSlashCommand interface {
 	slashCommand
-	doManage(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
-	doAutocomplete(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
+	doManage(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
+	doAutocomplete(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
 }
 
 type simpleSlashCommand struct {
@@ -33,55 +31,47 @@ type simpleSlashCommand struct {
 	args    slashCommandArgumentListDefinition
 }
 
-func (c *simpleSlashCommand) manage(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate) (bool, error) {
-	return c.doManage(log, sender, ss, i, i.ApplicationCommandData().Options)
+func (c *simpleSlashCommand) manage(info *InvokationInformation) (bool, error) {
+	return c.doManage(info, info.I.ApplicationCommandData().Options)
 }
 
-func (c *simpleSlashCommand) autocomplete(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate) (bool, error) {
-	return c.doAutocomplete(log, sender, ss, i, i.ApplicationCommandData().Options)
+func (c *simpleSlashCommand) autocomplete(info *InvokationInformation) (bool, error) {
+	return c.doAutocomplete(info, info.I.ApplicationCommandData().Options)
 }
 
-func (c *simpleSlashCommand) doManage(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
-	args, err := c.args.parse(i.ApplicationCommandData().Resolved, options, false)
+func (c *simpleSlashCommand) doManage(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
+	args, err := c.args.parse(info.I.ApplicationCommandData().Resolved, options, false)
 	if err != nil {
 		return false, err
 	}
 	ctx := SlashExecutionContext{
 		respondingContext: respondingContext{
-			executionContext: executionContext{
-				log:     log,
-				Session: ss,
-				I:       i,
-			},
+			executionContext: newExecutionContext(info),
 		},
 		slashCommandArgumentList: args,
 	}
-	err = c.handler(sender, &ctx)
+	err = c.handler(&ctx)
 	return ctx.alreadyResponded, err
 }
 
-func (c *simpleSlashCommand) doAutocomplete(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
+func (c *simpleSlashCommand) doAutocomplete(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
 	arg, err := c.findFocusedArgument(options)
 	if err != nil {
 		return false, err
 	}
-	args, err := c.args.parse(i.ApplicationCommandData().Resolved, options, true)
+	args, err := c.args.parse(info.I.ApplicationCommandData().Resolved, options, true)
 	if err != nil {
 		return false, err
 	}
 	ctx := SlashAutocompleteContext{
-		executionContext: executionContext{
-			log:     log,
-			Session: ss,
-			I:       i,
-		},
+		executionContext:         newExecutionContext(info),
 		slashCommandArgumentList: args,
 	}
-	if err := arg.Autocomplete(sender, &ctx); err != nil {
+	if err := arg.Autocomplete(&ctx); err != nil {
 		return false, err
 	}
 	choices := ctx.makeChoices()
-	err = ss.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	err = info.Session.InteractionRespond(info.I.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionApplicationCommandAutocompleteResult,
 		Data: &discordgo.InteractionResponseData{
 			Choices: choices,
@@ -111,28 +101,28 @@ type multiSlashCommand struct {
 	subCommands map[string]genericSlashCommand
 }
 
-func (c *multiSlashCommand) manage(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate) (bool, error) {
-	return c.doManage(log, sender, ss, i, i.ApplicationCommandData().Options)
+func (c *multiSlashCommand) manage(info *InvokationInformation) (bool, error) {
+	return c.doManage(info, info.I.ApplicationCommandData().Options)
 }
 
-func (c *multiSlashCommand) autocomplete(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate) (interactionAcknowledged bool, err error) {
-	return c.doAutocomplete(log, sender, ss, i, i.ApplicationCommandData().Options)
+func (c *multiSlashCommand) autocomplete(info *InvokationInformation) (interactionAcknowledged bool, err error) {
+	return c.doAutocomplete(info, info.I.ApplicationCommandData().Options)
 }
 
-func (c *multiSlashCommand) doManage(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
+func (c *multiSlashCommand) doManage(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
 	command, option, err := c.findSubCommand(options)
 	if err != nil {
 		return false, err
 	}
-	return command.doManage(log, sender, ss, i, option.Options)
+	return command.doManage(info, option.Options)
 }
 
-func (c *multiSlashCommand) doAutocomplete(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
+func (c *multiSlashCommand) doAutocomplete(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
 	command, option, err := c.findSubCommand(options)
 	if err != nil {
 		return false, err
 	}
-	return command.doAutocomplete(log, sender, ss, i, option.Options)
+	return command.doAutocomplete(info, option.Options)
 }
 
 func (c *multiSlashCommand) findSubCommand(options []*discordgo.ApplicationCommandInteractionDataOption) (genericSlashCommand, *discordgo.ApplicationCommandInteractionDataOption, error) {

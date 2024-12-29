@@ -32,7 +32,7 @@ func main() {
 	}
 	defer ss.Close()
 
-	commander := dgc.New(slog.Default(), ss)
+	commander := dgc.New(slog.Default(), ss, dgc.DefaultTimeProvider{})
 
 	taskSelectArg := dgc.NewIntegerAutocompleteArgument().
 		Name("task").
@@ -108,8 +108,9 @@ func main() {
 
 }
 
-func autocompleteTasks(sender *discordgo.User, ctx *dgc.SlashAutocompleteContext) error {
-	list := repo.getUserTasks(ctx.GetUserOr("user", sender).ID)
+func autocompleteTasks(ctx *dgc.SlashAutocompleteContext) error {
+	defer ctx.Finish()
+	list := repo.getUserTasks(ctx.GetUserOr("user", ctx.Sender).ID)
 	field := ctx.GetStringOr("task", "")
 	for _, task := range list.tasks {
 		if strings.Contains(task.name, field) || strings.Contains(task.description, field) {
@@ -119,8 +120,9 @@ func autocompleteTasks(sender *discordgo.User, ctx *dgc.SlashAutocompleteContext
 	return nil
 }
 
-func showTasks(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
-	user := ctx.GetUserOr("user", sender)
+func showTasks(ctx *dgc.SlashExecutionContext) error {
+	defer ctx.Finish()
+	user := ctx.GetUserOr("user", ctx.Sender)
 	list := repo.getUserTasks(user.ID)
 	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
 		Content: fmt.Sprintf("Tasks of <@%s>", user.ID),
@@ -130,8 +132,9 @@ func showTasks(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
 	})
 }
 
-func toggleTask(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
-	list := repo.getUserTasks(sender.ID)
+func toggleTask(ctx *dgc.SlashExecutionContext) error {
+	defer ctx.Finish()
+	list := repo.getUserTasks(ctx.Sender.ID)
 	selectedTaskId := ctx.GetRequiredInteger("task")
 	task := list.findTask(selectedTaskId)
 	if task == nil {
@@ -151,8 +154,9 @@ func toggleTask(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
 	})
 }
 
-func deleteTask(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
-	list := repo.getUserTasks(sender.ID)
+func deleteTask(ctx *dgc.SlashExecutionContext) error {
+	defer ctx.Finish()
+	list := repo.getUserTasks(ctx.Sender.ID)
 	selectedTaskId := ctx.GetRequiredInteger("task")
 	msg := "The task with id %d does not exist"
 	if list.deleteTask(selectedTaskId) {
@@ -163,8 +167,9 @@ func deleteTask(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
 	})
 }
 
-func createTask(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
-	list := repo.getUserTasks(sender.ID)
+func createTask(ctx *dgc.SlashExecutionContext) error {
+	defer ctx.Finish()
+	list := repo.getUserTasks(ctx.Sender.ID)
 	name := ctx.GetRequiredString("name")
 	description := ctx.GetStringOr("description", "")
 	var duration *time.Duration
@@ -178,8 +183,9 @@ func createTask(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
 	})
 }
 
-func editTask(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
-	list := repo.getUserTasks(sender.ID)
+func editTask(ctx *dgc.SlashExecutionContext) error {
+	defer ctx.Finish()
+	list := repo.getUserTasks(ctx.Sender.ID)
 	selectedTaskId := ctx.GetRequiredInteger("task")
 	task := list.findTask(selectedTaskId)
 	if task == nil {

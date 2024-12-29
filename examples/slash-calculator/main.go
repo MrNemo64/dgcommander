@@ -28,7 +28,7 @@ func main() {
 	}
 	defer ss.Close()
 
-	commander := dgc.New(slog.Default(), ss)
+	commander := dgc.New(slog.Default(), ss, dgc.DefaultTimeProvider{})
 
 	cmd, err := commander.AddCommand(
 		dgc.NewMultiSlashCommandBuilder().
@@ -79,7 +79,8 @@ func main() {
 	fmt.Println("Clossing")
 }
 
-func handleSum(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
+func handleSum(ctx *dgc.SlashExecutionContext) error {
+	defer ctx.Finish()
 	a := ctx.GetRequiredNumber("a")
 	b := ctx.GetRequiredNumber("b")
 	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
@@ -87,7 +88,8 @@ func handleSum(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
 	})
 }
 
-func handleSin(sender *discordgo.User, ctx *dgc.SlashExecutionContext) error {
+func handleSin(ctx *dgc.SlashExecutionContext) error {
+	defer ctx.Finish()
 	angle := ctx.GetRequiredNumber("angle")
 	degree := ctx.GetNumberOr("degree", 1) // default is radians
 	angle *= degree

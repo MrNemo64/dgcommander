@@ -9,31 +9,47 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type InvokationInformation struct {
+	DGC          *DGCommander
+	Session      *discordgo.Session
+	log          *slog.Logger
+	Sender       *discordgo.User
+	I            *discordgo.InteractionCreate
+	timeProvider TimeProvider
+	ReceivedTime time.Time
+}
+
 type command interface {
-	manage(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate) (interactionAcknowledged bool, err error)
+	manage(*InvokationInformation) (interactionAcknowledged bool, err error)
 }
 
 type autocomplete interface {
-	autocomplete(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate) (interactionAcknowledged bool, err error)
+	autocomplete(*InvokationInformation) (interactionAcknowledged bool, err error)
 }
+
+type TimeProvider interface {
+	Now() time.Time
+}
+
+type DefaultTimeProvider struct{}
+
+func (DefaultTimeProvider) Now() time.Time { return time.Now() }
 
 type DGCommander struct {
-	lock                  sync.RWMutex
-	commands              map[string]map[string]map[discordgo.ApplicationCommandType]command // Map of name -> guild/global -> type -> command
-	session               *discordgo.Session
-	log                   *slog.Logger
-	responseDuration      time.Duration // https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-callback
-	tokenValidityDuration time.Duration
+	lock         sync.RWMutex
+	commands     map[string]map[string]map[discordgo.ApplicationCommandType]command // Map of name -> guild/global -> type -> command
+	session      *discordgo.Session
+	log          *slog.Logger
+	timeProvider TimeProvider
 }
 
-func New(log *slog.Logger, session *discordgo.Session) *DGCommander {
+func New(log *slog.Logger, session *discordgo.Session, timeProvider TimeProvider) *DGCommander {
 	dgc := &DGCommander{
-		lock:                  sync.RWMutex{},
-		commands:              make(map[string]map[string]map[discordgo.ApplicationCommandType]command),
-		session:               session,
-		log:                   log,
-		responseDuration:      3 * time.Second,
-		tokenValidityDuration: 15 * time.Minute,
+		lock:         sync.RWMutex{},
+		commands:     make(map[string]map[string]map[discordgo.ApplicationCommandType]command),
+		session:      session,
+		log:          log,
+		timeProvider: timeProvider,
 	}
 	session.AddHandler(dgc.manageInteraction)
 	return dgc
@@ -57,22 +73,31 @@ func (c *DGCommander) manageInteraction(ss *discordgo.Session, i *discordgo.Inte
 	if i.Type == discordgo.InteractionPing || i.Type == discordgo.InteractionMessageComponent || i.Type == discordgo.InteractionModalSubmit {
 		return
 	}
-	sender := i.Interaction.User
-	if sender == nil {
-		sender = i.Interaction.Member.User
+	info := InvokationInformation{
+		DGC:          c,
+		Session:      ss,
+		log:          nil,
+		Sender:       i.Interaction.User,
+		I:            i,
+		timeProvider: c.timeProvider,
+		ReceivedTime: c.timeProvider.Now(),
 	}
-	log := c.log.With("sender", sender.ID, "interaction", i.Interaction) // TODO
+	if info.Sender == nil {
+		info.Sender = i.Interaction.Member.User
+	}
+	info.log = c.log.With("sender", info.Sender.ID, "interaction", i.Interaction) // TODO
 	if i.Type == discordgo.InteractionApplicationCommand {
 		data := i.ApplicationCommandData()
 		c.lock.RLock()
 		command, found := c.getCommandByNameInGuildAndType(data.Name, i.GuildID, data.CommandType)
 		c.lock.RUnlock()
 		if !found {
-			log.Info("Unknown application command received", "received-command", data)
+			info.log.Info("Unknown application command received", "received-command", data)
 			c.respondError(ss, i.Interaction, false, fmt.Errorf("Unknown command"))
 			return
 		}
-		interactionAcknowledged, err := command.manage(log, sender, ss, i)
+
+		interactionAcknowledged, err := command.manage(&info)
 		if err != nil {
 			c.respondError(ss, i.Interaction, interactionAcknowledged, err)
 		}
@@ -82,21 +107,21 @@ func (c *DGCommander) manageInteraction(ss *discordgo.Session, i *discordgo.Inte
 		command, found := c.getCommandByNameInGuildAndType(data.Name, i.GuildID, discordgo.ChatApplicationCommand)
 		c.lock.RUnlock()
 		if !found {
-			log.Info("Unknown application command autocompletion received", "received-command", data)
+			info.log.Info("Unknown application command autocompletion received", "received-command", data)
 			c.respondError(ss, i.Interaction, false, fmt.Errorf("Unknown command"))
 			return
 		}
 		ac, ok := command.(autocomplete)
 		if !ok {
-			log.Info("Received a request to autocomplete a non autocompletable command", "received-command", data)
+			info.log.Info("Received a request to autocomplete a non autocompletable command", "received-command", data)
 			c.respondError(ss, i.Interaction, false, fmt.Errorf("Cannot autocomplete"))
 		}
-		interactionAcknowledged, err := ac.autocomplete(log, sender, ss, i)
+		interactionAcknowledged, err := ac.autocomplete(&info)
 		if err != nil {
 			c.respondError(ss, i.Interaction, interactionAcknowledged, err)
 		}
 	} else {
-		log.Warn("Unknown interaction type")
+		info.log.Warn("Unknown interaction type")
 	}
 }
 

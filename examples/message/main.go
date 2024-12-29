@@ -27,7 +27,7 @@ func main() {
 	}
 	defer ss.Close()
 
-	commander := dgc.New(slog.Default(), ss)
+	commander := dgc.New(slog.Default(), ss, dgc.DefaultTimeProvider{})
 
 	cmd, err := commander.AddCommand(
 		dgc.NewMessageCommand().
@@ -55,6 +55,7 @@ func main() {
 }
 
 func handleResend(ctx *dgc.MessageExecutionContext, sender *discordgo.User) error {
+	defer ctx.Finish()
 	fmt.Printf("Called by %s (%s) on message %s\n", sender.Username, sender.ID, ctx.Message.ID)
 	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
 		Content: ctx.Message.Content,

@@ -2,7 +2,6 @@ package dgc
 
 import (
 	"errors"
-	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -17,8 +16,8 @@ type messageCommand struct {
 	handler MessageCommandHandler
 }
 
-func (c *messageCommand) manage(log *slog.Logger, sender *discordgo.User, ss *discordgo.Session, i *discordgo.InteractionCreate) (bool, error) {
-	data := i.ApplicationCommandData()
+func (c *messageCommand) manage(info *InvokationInformation) (bool, error) {
+	data := info.I.ApplicationCommandData()
 	targetMessage := data.TargetID
 	message, found := data.Resolved.Messages[targetMessage]
 	if !found {
@@ -26,14 +25,10 @@ func (c *messageCommand) manage(log *slog.Logger, sender *discordgo.User, ss *di
 	}
 	ctx := MessageExecutionContext{
 		respondingContext: respondingContext{
-			executionContext: executionContext{
-				log:     log,
-				Session: ss,
-				I:       i,
-			},
+			executionContext: newExecutionContext(info),
 		},
 		Message: message,
 	}
-	err := c.handler(&ctx, sender)
+	err := c.handler(&ctx, info.Sender)
 	return ctx.alreadyResponded, err
 }
