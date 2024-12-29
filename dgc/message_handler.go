@@ -2,21 +2,19 @@ package dgc
 
 import (
 	"errors"
-
-	"github.com/bwmarrin/discordgo"
 )
 
 var (
 	ErrMessageCommandHasNoMessage = errors.New("Message command was used but no message was given")
 )
 
-type MessageCommandHandler func(ctx *MessageExecutionContext, sender *discordgo.User) error
+type MessageCommandHandler func(ctx *MessageExecutionContext) error
 
 type messageCommand struct {
 	handler MessageCommandHandler
 }
 
-func (c *messageCommand) manage(info *InvokationInformation) (bool, error) {
+func (c *messageCommand) execute(info *InvokationInformation) (bool, error) {
 	data := info.I.ApplicationCommandData()
 	targetMessage := data.TargetID
 	message, found := data.Resolved.Messages[targetMessage]
@@ -29,6 +27,6 @@ func (c *messageCommand) manage(info *InvokationInformation) (bool, error) {
 		},
 		Message: message,
 	}
-	err := c.handler(&ctx, info.Sender)
+	err := c.handler(&ctx)
 	return ctx.alreadyResponded, err
 }

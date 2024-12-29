@@ -22,7 +22,7 @@ type slashCommand interface {
 
 type genericSlashCommand interface {
 	slashCommand
-	doManage(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
+	doExecute(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
 	doAutocomplete(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
 }
 
@@ -31,15 +31,15 @@ type simpleSlashCommand struct {
 	args    slashCommandArgumentListDefinition
 }
 
-func (c *simpleSlashCommand) manage(info *InvokationInformation) (bool, error) {
-	return c.doManage(info, info.I.ApplicationCommandData().Options)
+func (c *simpleSlashCommand) execute(info *InvokationInformation) (bool, error) {
+	return c.doExecute(info, info.I.ApplicationCommandData().Options)
 }
 
 func (c *simpleSlashCommand) autocomplete(info *InvokationInformation) (bool, error) {
 	return c.doAutocomplete(info, info.I.ApplicationCommandData().Options)
 }
 
-func (c *simpleSlashCommand) doManage(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
+func (c *simpleSlashCommand) doExecute(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
 	args, err := c.args.parse(info.I.ApplicationCommandData().Resolved, options, false)
 	if err != nil {
 		return false, err
@@ -101,20 +101,20 @@ type multiSlashCommand struct {
 	subCommands map[string]genericSlashCommand
 }
 
-func (c *multiSlashCommand) manage(info *InvokationInformation) (bool, error) {
-	return c.doManage(info, info.I.ApplicationCommandData().Options)
+func (c *multiSlashCommand) execute(info *InvokationInformation) (bool, error) {
+	return c.doExecute(info, info.I.ApplicationCommandData().Options)
 }
 
 func (c *multiSlashCommand) autocomplete(info *InvokationInformation) (interactionAcknowledged bool, err error) {
 	return c.doAutocomplete(info, info.I.ApplicationCommandData().Options)
 }
 
-func (c *multiSlashCommand) doManage(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
+func (c *multiSlashCommand) doExecute(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
 	command, option, err := c.findSubCommand(options)
 	if err != nil {
 		return false, err
 	}
-	return command.doManage(info, option.Options)
+	return command.doExecute(info, option.Options)
 }
 
 func (c *multiSlashCommand) doAutocomplete(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {

@@ -31,6 +31,7 @@ func main() {
 	makefileContent.WriteString("# Auto-generated Makefile. Do not edit manually.\n\n")
 	makefileContent.WriteString("generate.makefile-debug:\n")
 	makefileContent.WriteString("\tcd tools/makefile_debug && go run .\n\n")
+	makefileContent.WriteString("# If we kill a debug process from VSCode the commands are not deleted. This is to clean up for when this happens.\n")
 	makefileContent.WriteString("delete.commands:\n")
 	makefileContent.WriteString("\tcd tools/delete_commands && go run .\n\n")
 	for _, example := range examples {

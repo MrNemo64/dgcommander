@@ -20,7 +20,7 @@ type InvokationInformation struct {
 }
 
 type command interface {
-	manage(*InvokationInformation) (interactionAcknowledged bool, err error)
+	execute(*InvokationInformation) (interactionAcknowledged bool, err error)
 }
 
 type autocomplete interface {
@@ -97,7 +97,7 @@ func (c *DGCommander) manageInteraction(ss *discordgo.Session, i *discordgo.Inte
 			return
 		}
 
-		interactionAcknowledged, err := command.manage(&info)
+		interactionAcknowledged, err := command.execute(&info)
 		if err != nil {
 			c.respondError(ss, i.Interaction, interactionAcknowledged, err)
 		}

@@ -30,9 +30,9 @@ func main() {
 	commander := dgc.New(slog.Default(), ss, dgc.DefaultTimeProvider{})
 
 	cmd, err := commander.AddCommand(
-		dgc.NewMessageCommand().
-			Name("Resend message").
-			Handler(handleResend).
+		dgc.NewUserCommand().
+			Name("User information").
+			Handler(handleInfo).
 			AllowEverywhere(true),
 	)
 	if err != nil {
@@ -55,11 +55,21 @@ func main() {
 	fmt.Println("Clossing")
 }
 
-func handleResend(ctx *dgc.MessageExecutionContext) error {
+func handleInfo(ctx *dgc.UserExecutionContext) error {
 	defer ctx.Finish()
-	fmt.Printf("Called by %s (%s) on message %s\n", ctx.Sender.Username, ctx.Sender.ID, ctx.Message.ID)
+	fmt.Printf("Called by %s (%s) on user %s (%s)\n", ctx.Sender.Username, ctx.Sender.ID, ctx.User.Username, ctx.User.ID)
 	return ctx.RespondWithMessage(&discordgo.InteractionResponseData{
-		Content: ctx.Message.Content,
-		Embeds:  ctx.Message.Embeds,
+		Content: "User information",
+		Embeds: []*discordgo.MessageEmbed{{
+			Title: ctx.User.Username,
+			Color: ctx.User.AccentColor,
+			Image: &discordgo.MessageEmbedImage{
+				URL: ctx.User.AvatarURL(""),
+			},
+			Fields: []*discordgo.MessageEmbedField{{
+				Name:  "Bot?",
+				Value: fmt.Sprintf("%t", ctx.User.Bot),
+			}},
+		}},
 	})
 }

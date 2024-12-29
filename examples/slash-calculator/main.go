@@ -68,6 +68,7 @@ func main() {
 		if err := ss.ApplicationCommandDelete(ss.State.User.ID, cmd.GuildID, cmd.ID); err != nil {
 			panic(err)
 		}
+		fmt.Println("Deleted command")
 	}()
 
 	fmt.Println("Running")

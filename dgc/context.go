@@ -20,6 +20,7 @@ type executionContext struct {
 	timer        *time.Timer
 	ctx          context.Context
 	cancelCtx    context.CancelFunc
+	// TODO add info about context like if running on a guild/dm
 }
 
 func newExecutionContext(info *InvokationInformation) *executionContext {
@@ -99,6 +100,14 @@ func (ctx *respondingContext) AddFollowup(wait bool, data *discordgo.WebhookPara
 type MessageExecutionContext struct {
 	respondingContext
 	Message *discordgo.Message
+}
+
+// User
+
+type UserExecutionContext struct {
+	respondingContext
+	User   *discordgo.User
+	Member *discordgo.Member // Nil if not running on a guild
 }
 
 // Slash

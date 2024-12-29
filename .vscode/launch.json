@@ -27,6 +27,14 @@
       "mode": "auto",
       "program": "examples/tasks",
       "cwd": "examples/tasks"
+    },
+    {
+      "name": "users",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "examples/users",
+      "cwd": "examples/users"
     }
   ]
 }
