@@ -1,6 +1,7 @@
 package dgc
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -42,15 +43,17 @@ type DGCommander struct {
 	session      *discordgo.Session
 	log          *slog.Logger
 	timeProvider TimeProvider
+	ctx          context.Context
 }
 
-func New(log *slog.Logger, session *discordgo.Session, timeProvider TimeProvider) *DGCommander {
+func New(ctx context.Context, log *slog.Logger, session *discordgo.Session, timeProvider TimeProvider) *DGCommander {
 	dgc := &DGCommander{
 		lock:         sync.RWMutex{},
 		commands:     make(map[string]map[string]map[discordgo.ApplicationCommandType]command),
 		session:      session,
 		log:          log,
 		timeProvider: timeProvider,
+		ctx:          ctx,
 	}
 	session.AddHandler(dgc.manageInteraction)
 	return dgc

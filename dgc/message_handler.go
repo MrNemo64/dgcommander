@@ -23,7 +23,7 @@ func (c *messageCommand) execute(info *InvokationInformation) (bool, error) {
 	}
 	ctx := MessageExecutionContext{
 		respondingContext: respondingContext{
-			executionContext: newExecutionContext(info),
+			executionContext: newExecutionContext(info.DGC.ctx, info),
 		},
 		Message: message,
 	}

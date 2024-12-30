@@ -28,7 +28,7 @@ func (c *userCommand) execute(info *InvokationInformation) (bool, error) {
 	}
 	ctx := UserExecutionContext{
 		respondingContext: respondingContext{
-			executionContext: newExecutionContext(info),
+			executionContext: newExecutionContext(info.DGC.ctx, info),
 		},
 		User:   user,
 		Member: member,

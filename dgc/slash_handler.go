@@ -46,7 +46,7 @@ func (c *simpleSlashCommand) doExecute(info *InvokationInformation, options []*d
 	}
 	ctx := SlashExecutionContext{
 		respondingContext: respondingContext{
-			executionContext: newExecutionContext(info),
+			executionContext: newExecutionContext(info.DGC.ctx, info),
 		},
 		slashCommandArgumentList: args,
 	}
@@ -64,7 +64,7 @@ func (c *simpleSlashCommand) doAutocomplete(info *InvokationInformation, options
 		return false, err
 	}
 	ctx := SlashAutocompleteContext{
-		executionContext:         newExecutionContext(info),
+		executionContext:         newExecutionContext(info.DGC.ctx, info),
 		slashCommandArgumentList: args,
 	}
 	if err := arg.Autocomplete(&ctx); err != nil {

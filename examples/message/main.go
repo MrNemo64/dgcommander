@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -27,7 +28,7 @@ func main() {
 	}
 	defer ss.Close()
 
-	commander := dgc.New(slog.Default(), ss, dgc.DefaultTimeProvider{})
+	commander := dgc.New(context.Background(), slog.Default(), ss, dgc.DefaultTimeProvider{})
 
 	cmd, err := commander.AddCommand(
 		dgc.NewMessageCommand().

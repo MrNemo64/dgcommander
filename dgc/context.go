@@ -26,15 +26,15 @@ type executionContext struct {
 	// - locale about the sender
 }
 
-func newExecutionContext(info *InvokationInformation) *executionContext {
-	c, f := context.WithCancel(context.Background()) // todo receive context from background
-	ctx := &executionContext{
+func newExecutionContext(ctx context.Context, info *InvokationInformation) *executionContext {
+	c, f := context.WithCancel(ctx)
+	ectx := &executionContext{
 		InvokationInformation: info,
 		ctx:                   c,
 		cancelCtx:             f,
 	}
-	ctx.timer = time.AfterFunc(ctx.EndTime().Sub(info.timeProvider.Now()), func() { ctx.cancelCtx() })
-	return ctx
+	ectx.timer = time.AfterFunc(ectx.EndTime().Sub(info.timeProvider.Now()), func() { ectx.cancelCtx() })
+	return ectx
 }
 
 func (ctx *executionContext) Finish() {
