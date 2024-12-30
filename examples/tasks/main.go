@@ -36,55 +36,55 @@ func main() {
 	commander := dgc.New(context.Background(), slog.Default(), ss, dgc.DefaultTimeProvider{})
 
 	taskSelectArg := dgc.NewIntegerAutocompleteArgument().
-		Name("task").
-		Description("Task to perform the command on").
+		Name().Set("task").
+		Description().Set("Task to perform the command on").
 		Handler(autocompleteTasks).
 		Required(true)
 
 	cmd, err := commander.AddCommand(
 		dgc.NewMultiSlashCommandBuilder().
-			Name("tasks").
-			Description("Main command").
+			Name().Set("tasks").
+			Description().Set("Main command").
 			AllowEverywhere(true).
 			AddSubCommand(dgc.NewSubCommand().
-				Name("list").
-				Description("List all tasks").
+				Name().Set("list").
+				Description().Set("List all tasks").
 				AddArgument(dgc.NewUserArgument().
-					Name("user").
-					Description("User to run the command on. Defaults to the user running the command").
+					Name().Set("user").
+					Description().Set("User to run the command on. Defaults to the user running the command").
 					Required(false)).
 				Handler(showTasks),
 			).
 			AddSubCommand(dgc.NewSubCommand().
-				Name("toggle").
-				Description("Toggles a task, setting it as done or not").
+				Name().Set("toggle").
+				Description().Set("Toggles a task, setting it as done or not").
 				AddArgument(taskSelectArg).
 				Handler(toggleTask),
 			).
 			AddSubCommand(dgc.NewSubCommand().
-				Name("delete").
-				Description("Deletes a task").
+				Name().Set("delete").
+				Description().Set("Deletes a task").
 				AddArgument(taskSelectArg).
 				Handler(deleteTask),
 			).
 			AddSubCommand(dgc.NewSubCommand().
-				Name("create").
-				Description("Creates a task").
+				Name().Set("create").
+				Description().Set("Creates a task").
 				AddArguments(
-					dgc.NewStringArgument().Name("name").Description("Task name").Required(true),
-					dgc.NewStringArgument().Name("description").Description("Task description").Required(false),
-					extras.NewDurationArgument().Name("duration").Description("Task duration").Required(false),
+					dgc.NewStringArgument().Name().Set("name").Description().Set("Task name").Required(true),
+					dgc.NewStringArgument().Name().Set("description").Description().Set("Task description").Required(false),
+					extras.NewDurationArgument().Name().Set("duration").Description().Set("Task duration").Required(false),
 				).
 				Handler(createTask),
 			).
 			AddSubCommand(dgc.NewSubCommand().
-				Name("edit").
-				Description("Edit a task").
+				Name().Set("edit").
+				Description().Set("Edit a task").
 				AddArguments(
 					taskSelectArg,
-					dgc.NewStringArgument().Name("name").Description("Task name").Required(false),
-					dgc.NewStringArgument().Name("description").Description("Task description").Required(false),
-					extras.NewDurationArgument().Name("duration").Description("Task duration").Required(false),
+					dgc.NewStringArgument().Name().Set("name").Description().Set("Task name").Required(false),
+					dgc.NewStringArgument().Name().Set("description").Description().Set("Task description").Required(false),
+					extras.NewDurationArgument().Name().Set("duration").Description().Set("Task duration").Required(false),
 				).
 				Handler(editTask),
 			),

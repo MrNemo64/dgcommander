@@ -4,23 +4,22 @@ import (
 	"time"
 
 	"github.com/MrNemo64/dgcommander/dgc"
+	"github.com/MrNemo64/dgcommander/dgc/util"
 	"github.com/bwmarrin/discordgo"
 )
 
 type DurationSlashCommandArgumentBuilder struct {
-	name        string
-	description string
+	name        util.Localizable[*DurationSlashCommandArgumentBuilder]
+	description util.Localizable[*DurationSlashCommandArgumentBuilder]
 	required    bool
 }
 
-func (b *DurationSlashCommandArgumentBuilder) Name(name string) *DurationSlashCommandArgumentBuilder {
-	b.name = name
-	return b
+func (b *DurationSlashCommandArgumentBuilder) Name() *util.Localizable[*DurationSlashCommandArgumentBuilder] {
+	return &b.name
 }
 
-func (b *DurationSlashCommandArgumentBuilder) Description(description string) *DurationSlashCommandArgumentBuilder {
-	b.description = description
-	return b
+func (b *DurationSlashCommandArgumentBuilder) Description() *util.Localizable[*DurationSlashCommandArgumentBuilder] {
+	return &b.description
 }
 
 func (b *DurationSlashCommandArgumentBuilder) Required(required bool) *DurationSlashCommandArgumentBuilder {
@@ -30,17 +29,19 @@ func (b *DurationSlashCommandArgumentBuilder) Required(required bool) *DurationS
 
 func (b *DurationSlashCommandArgumentBuilder) Create() (*string, dgc.SlashCommandArgument) {
 	if b.required {
-		return &b.name, &DurationSlashCommandArgument{b.name}
+		return &b.name.Value, &DurationSlashCommandArgument{b.name.Value}
 	}
-	return nil, &DurationSlashCommandArgument{b.name}
+	return nil, &DurationSlashCommandArgument{b.name.Value}
 }
 
 func (b *DurationSlashCommandArgumentBuilder) DiscordDefineForCreation() *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
-		Type:        discordgo.ApplicationCommandOptionString,
-		Name:        b.name,
-		Description: b.description,
-		Required:    b.required,
+		Type:                     discordgo.ApplicationCommandOptionString,
+		Name:                     b.name.Value,
+		NameLocalizations:        b.name.Localizations,
+		Description:              b.description.Value,
+		DescriptionLocalizations: b.description.Localizations,
+		Required:                 b.required,
 	}
 }
 

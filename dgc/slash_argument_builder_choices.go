@@ -7,8 +7,9 @@ import (
 )
 
 type ArgumentChoice[T any] struct {
-	Name  string
-	Value T
+	Name          string
+	Value         T
+	Localizations map[discordgo.Locale]string
 }
 
 type genericSlashCommandChoicesArgumentBuilder[T any, B specificSlashCommandArgumentBuilder] struct {
@@ -27,7 +28,11 @@ func (b *genericSlashCommandChoicesArgumentBuilder[T, B]) WithChoices(choice ...
 }
 
 func (b *genericSlashCommandChoicesArgumentBuilder[T, B]) AddChoice(name string, value T) B {
-	b.choices = append(b.choices, ArgumentChoice[T]{name, value})
+	return b.AddLocalizedChoice(name, value, nil)
+}
+
+func (b *genericSlashCommandChoicesArgumentBuilder[T, B]) AddLocalizedChoice(name string, value T, localization map[discordgo.Locale]string) B {
+	b.choices = append(b.choices, ArgumentChoice[T]{name, value, nil})
 	return b.upper
 }
 
@@ -44,7 +49,7 @@ func (b *genericSlashCommandChoicesArgumentBuilder[T, B]) AddChoices(choices ...
 		if !ok {
 			panic(fmt.Errorf("Called choicesArgumentBuilder.AddChoices but %v at index %d is not a %s", choices[i], i, nameOfT[T]()))
 		}
-		b.choices = append(b.choices, ArgumentChoice[T]{name, value})
+		b.choices = append(b.choices, ArgumentChoice[T]{name, value, nil})
 	}
 	return b.upper
 }
@@ -53,8 +58,9 @@ func (b *genericSlashCommandChoicesArgumentBuilder[T, B]) discordDefineForCreati
 	c := make([]*discordgo.ApplicationCommandOptionChoice, len(b.choices))
 	for i, choice := range b.choices {
 		c[i] = &discordgo.ApplicationCommandOptionChoice{
-			Name:  choice.Name,
-			Value: choice.Value,
+			Name:              choice.Name,
+			Value:             choice.Value,
+			NameLocalizations: choice.Localizations,
 		}
 	}
 	return c
@@ -74,13 +80,12 @@ func (b *stringSlashCommandChoicesArgumentBuilder) DiscordDefineForCreation() *d
 }
 
 func (b *stringSlashCommandChoicesArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &StringSlashCommandArgument{inlinedSlashCommandArgument[string]{b.name}}
+	return &StringSlashCommandArgument{inlinedSlashCommandArgument[string]{b.name.Value}}
 }
 
 func NewStringChoicesArgument() *stringSlashCommandChoicesArgumentBuilder {
 	b := &stringSlashCommandChoicesArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionString
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionString)
 	b.genericSlashCommandChoicesArgumentBuilder.upper = b
 	return b
 }
@@ -99,7 +104,7 @@ func (b *integerSlashCommandChoicesArgumentBuilder) DiscordDefineForCreation() *
 }
 
 func (b *integerSlashCommandChoicesArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &IntegerSlashCommandArgument{name: b.name}
+	return &IntegerSlashCommandArgument{name: b.name.Value}
 }
 
 func NewIntegerChoicesArgument() *integerSlashCommandChoicesArgumentBuilder {
@@ -124,13 +129,12 @@ func (b *numberSlashCommandChoicesArgumentBuilder) DiscordDefineForCreation() *d
 }
 
 func (b *numberSlashCommandChoicesArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &NumberSlashCommandArgument{inlinedSlashCommandArgument[float64]{b.name}}
+	return &NumberSlashCommandArgument{inlinedSlashCommandArgument[float64]{b.name.Value}}
 }
 
 func NewNumberChoicesArgument() *numberSlashCommandChoicesArgumentBuilder {
 	b := &numberSlashCommandChoicesArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionNumber
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionNumber)
 	b.genericSlashCommandChoicesArgumentBuilder.upper = b
 	return b
 }

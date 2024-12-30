@@ -12,6 +12,7 @@ type MessageCommandBuilder struct {
 func NewMessageCommand() *MessageCommandBuilder {
 	b := &MessageCommandBuilder{}
 	b.genericCommandBuilder.upper = b
+	b.genericCommandBuilder.name.Upper = b
 	return b
 }
 

@@ -1,6 +1,7 @@
 package dgc
 
 import (
+	"github.com/MrNemo64/dgcommander/dgc/util"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -19,35 +20,44 @@ type specificSlashCommandArgumentBuilder interface {
 type genericSlashCommandArgumentBuilder[B specificSlashCommandArgumentBuilder] struct {
 	upper       B
 	kind        discordgo.ApplicationCommandOptionType
-	name        string
-	description string
+	name        util.Localizable[B]
+	description util.Localizable[B]
 	required    bool
 }
 
 func (arg *genericSlashCommandArgumentBuilder[B]) DiscordDefineForCreation() *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
-		Type:        arg.kind,
-		Name:        arg.name,
-		Description: arg.description,
-		Required:    arg.required,
+		Type:                     arg.kind,
+		Name:                     arg.name.Value,
+		NameLocalizations:        arg.name.Localizations,
+		Description:              arg.description.Value,
+		DescriptionLocalizations: arg.description.Localizations,
+		Required:                 arg.required,
 	}
+}
+
+func newGenericSlashCommandArgumentBuilder[B specificSlashCommandArgumentBuilder](upper B, kind discordgo.ApplicationCommandOptionType) genericSlashCommandArgumentBuilder[B] {
+	b := genericSlashCommandArgumentBuilder[B]{}
+	b.kind = kind
+	b.upper = upper
+	b.name.Upper = upper
+	b.description.Upper = upper
+	return b
 }
 
 func (arg *genericSlashCommandArgumentBuilder[B]) Create() (*string, SlashCommandArgument) {
 	if arg.required {
-		return &arg.name, arg.upper.createSpecific()
+		return &arg.name.Value, arg.upper.createSpecific()
 	}
 	return nil, arg.upper.createSpecific()
 }
 
-func (b *genericSlashCommandArgumentBuilder[B]) Name(name string) B {
-	b.name = name
-	return b.upper
+func (b *genericSlashCommandArgumentBuilder[B]) Name() *util.Localizable[B] {
+	return &b.name
 }
 
-func (b *genericSlashCommandArgumentBuilder[B]) Description(description string) B {
-	b.description = description
-	return b.upper
+func (b *genericSlashCommandArgumentBuilder[B]) Description() *util.Localizable[B] {
+	return &b.description
 }
 
 func (b *genericSlashCommandArgumentBuilder[B]) Required(required bool) B {
@@ -63,13 +73,12 @@ type booleanArgumentBuilder struct {
 
 func NewBooleanArgument() *booleanArgumentBuilder {
 	b := &booleanArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionBoolean
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionBoolean)
 	return b
 }
 
 func (b *booleanArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &BooleanSlashCommandArgument{inlinedSlashCommandArgument[bool]{b.name}}
+	return &BooleanSlashCommandArgument{inlinedSlashCommandArgument[bool]{b.name.Value}}
 }
 
 // String
@@ -82,8 +91,7 @@ type stringSlashCommandArgumentBuilder struct {
 
 func NewStringArgument() *stringSlashCommandArgumentBuilder {
 	b := &stringSlashCommandArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionString
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionString)
 	return b
 }
 
@@ -97,7 +105,7 @@ func (b *stringSlashCommandArgumentBuilder) DiscordDefineForCreation() *discordg
 }
 
 func (b *stringSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &StringSlashCommandArgument{inlinedSlashCommandArgument[string]{b.name}}
+	return &StringSlashCommandArgument{inlinedSlashCommandArgument[string]{b.name.Value}}
 }
 
 // 0-6000
@@ -122,8 +130,7 @@ type integerSlashCommandArgumentBuilder struct {
 
 func NewIntegerArgument() *integerSlashCommandArgumentBuilder {
 	b := &integerSlashCommandArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionInteger
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionInteger)
 	return b
 }
 
@@ -138,7 +145,7 @@ func (b *integerSlashCommandArgumentBuilder) DiscordDefineForCreation() *discord
 }
 
 func (b *integerSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &IntegerSlashCommandArgument{b.name}
+	return &IntegerSlashCommandArgument{b.name.Value}
 }
 
 func (b *integerSlashCommandArgumentBuilder) MinValue(min int) *integerSlashCommandArgumentBuilder {
@@ -161,8 +168,7 @@ type numberSlashCommandArgumentBuilder struct {
 
 func NewNumberArgument() *numberSlashCommandArgumentBuilder {
 	b := &numberSlashCommandArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionNumber
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionNumber)
 	return b
 }
 
@@ -176,7 +182,7 @@ func (b *numberSlashCommandArgumentBuilder) DiscordDefineForCreation() *discordg
 }
 
 func (b *numberSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &NumberSlashCommandArgument{inlinedSlashCommandArgument[float64]{b.name}}
+	return &NumberSlashCommandArgument{inlinedSlashCommandArgument[float64]{b.name.Value}}
 }
 
 func (b *numberSlashCommandArgumentBuilder) MinValue(min float64) *numberSlashCommandArgumentBuilder {
@@ -197,15 +203,14 @@ type userSlashCommandArgumentBuilder struct {
 
 func NewUserArgument() *userSlashCommandArgumentBuilder {
 	b := &userSlashCommandArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionUser
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionUser)
 	return b
 }
 
 func (b *userSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
 	a := &UserSlashCommandArgument{
 		genericExtractingSlashCommandArgument: genericExtractingSlashCommandArgument[discordgo.User, *UserSlashCommandArgument]{
-			name: b.name,
+			name: b.name.Value,
 		},
 	}
 	a.genericExtractingSlashCommandArgument.specific = a
@@ -220,15 +225,14 @@ type roleSlashCommandArgumentBuilder struct {
 
 func NewRoleArgument() *roleSlashCommandArgumentBuilder {
 	b := &roleSlashCommandArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionRole
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionRole)
 	return b
 }
 
 func (b *roleSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
 	a := &RoleSlashCommandArgument{
 		genericExtractingSlashCommandArgument: genericExtractingSlashCommandArgument[discordgo.Role, *RoleSlashCommandArgument]{
-			name: b.name,
+			name: b.name.Value,
 		},
 	}
 	a.genericExtractingSlashCommandArgument.specific = a
@@ -243,13 +247,12 @@ type mentionableSlashCommandArgumentBuilder struct {
 
 func NewMentionableArgument() *mentionableSlashCommandArgumentBuilder {
 	b := &mentionableSlashCommandArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionMentionable
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionMentionable)
 	return b
 }
 
 func (b *mentionableSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
-	return &MentionableSlashCommandArgument{b.name}
+	return &MentionableSlashCommandArgument{b.name.Value}
 }
 
 // Attachment
@@ -260,15 +263,14 @@ type attachmentSlashCommandArgumentBuilder struct {
 
 func NewAttachmentArgument() *attachmentSlashCommandArgumentBuilder {
 	b := &attachmentSlashCommandArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionAttachment
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionAttachment)
 	return b
 }
 
 func (b *attachmentSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
 	a := &AttachmentSlashCommandArgument{
 		genericExtractingSlashCommandArgument: genericExtractingSlashCommandArgument[discordgo.MessageAttachment, *AttachmentSlashCommandArgument]{
-			name: b.name,
+			name: b.name.Value,
 		},
 	}
 	a.genericExtractingSlashCommandArgument.specific = a
@@ -284,8 +286,7 @@ type channelSlashCommandArgumentBuilder struct {
 
 func NewChannelArgument() *channelSlashCommandArgumentBuilder {
 	b := &channelSlashCommandArgumentBuilder{}
-	b.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionChannel
-	b.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionChannel)
 	return b
 }
 
@@ -298,7 +299,7 @@ func (b *channelSlashCommandArgumentBuilder) DiscordDefineForCreation() *discord
 func (b *channelSlashCommandArgumentBuilder) createSpecific() SlashCommandArgument {
 	a := &ChannelSlashCommandArgument{
 		genericExtractingSlashCommandArgument: genericExtractingSlashCommandArgument[discordgo.Channel, *ChannelSlashCommandArgument]{
-			name: b.name,
+			name: b.name.Value,
 		},
 	}
 	a.genericExtractingSlashCommandArgument.specific = a

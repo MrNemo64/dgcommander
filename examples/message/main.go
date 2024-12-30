@@ -32,7 +32,7 @@ func main() {
 
 	cmd, err := commander.AddCommand(
 		dgc.NewMessageCommand().
-			Name("Resend message").
+			Name().Set("Resend message").
 			Handler(handleResend).
 			AllowEverywhere(true),
 	)

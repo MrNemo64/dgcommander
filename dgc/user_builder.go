@@ -12,6 +12,7 @@ type UserCommandBuilder struct {
 func NewUserCommand() *UserCommandBuilder {
 	b := &UserCommandBuilder{}
 	b.genericCommandBuilder.upper = b
+	b.genericCommandBuilder.name.Upper = b
 	return b
 }
 

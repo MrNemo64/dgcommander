@@ -33,27 +33,27 @@ func main() {
 
 	cmd, err := commander.AddCommand(
 		dgc.NewMultiSlashCommandBuilder().
-			Name("calculate").
-			Description("Collection of simple operations").
+			Name().Set("calculate").
+			Description().Set("Collection of simple operations").
 			AllowEverywhere(true).
 			AddSubCommand(dgc.NewSubCommand().
-				Name("sum").
-				Description("Calculates the sum of 2 numbers `a+b`").
+				Name().Set("sum").
+				Description().Set("Calculates the sum of 2 numbers `a+b`").
 				AddArguments(
-					dgc.NewNumberArgument().Name("a").Description("First value of the sum").Required(true),
-					dgc.NewNumberArgument().Name("b").Description("Seccond value of the sum").Required(true),
+					dgc.NewNumberArgument().Name().Set("a").Description().Set("First value of the sum").Required(true),
+					dgc.NewNumberArgument().Name().Set("b").Description().Set("Seccond value of the sum").Required(true),
 				).
 				Handler(handleSum),
 			).
 			AddSubCommandGroup(dgc.NewSubCommandGroup().
-				Name("trigonometry").
-				Description("Trigonometry related functions").
+				Name().Set("trigonometry").
+				Description().Set("Trigonometry related functions").
 				AddSubCommand(dgc.NewSubCommand().
-					Name("sin").
-					Description("Calculates the sin of the given angle").
+					Name().Set("sin").
+					Description().Set("Calculates the sin of the given angle").
 					AddArguments(
-						dgc.NewNumberArgument().Name("angle").Description("The angle to calculate the sin").Required(true),
-						dgc.NewNumberChoicesArgument().Name("degree").Description("Degree of type to calculate").Required(false).
+						dgc.NewNumberArgument().Name().Set("angle").Description().Set("The angle to calculate the sin").Required(true),
+						dgc.NewNumberChoicesArgument().Name().Set("degree").Description().Set("Degree of type to calculate").Required(false).
 							AddChoice("degrees", math.Pi/180.01).
 							AddChoice("radians", 1),
 					).

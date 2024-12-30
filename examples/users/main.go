@@ -32,7 +32,7 @@ func main() {
 
 	cmd, err := commander.AddCommand(
 		dgc.NewUserCommand().
-			Name("User information").
+			Name().Set("User information").
 			Handler(handleInfo).
 			AllowEverywhere(true),
 	)

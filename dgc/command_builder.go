@@ -3,6 +3,7 @@ package dgc
 import (
 	"slices"
 
+	"github.com/MrNemo64/dgcommander/dgc/util"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -16,12 +17,11 @@ type specificCommandBuilder interface {
 
 type genericCommandBuilder[B specificCommandBuilder] struct {
 	upper        B
-	name         string
+	name         util.Localizable[B]
 	guildId      string
 	nsfw         bool
 	integrations []discordgo.ApplicationIntegrationType // https://discord.com/developers/docs/resources/application#application-object-application-integration-types
 	contexts     []discordgo.InteractionContextType     // https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-context-types
-
 }
 
 func (b *genericCommandBuilder[B]) discordDefineForCreation() *discordgo.ApplicationCommand {
@@ -33,17 +33,21 @@ func (b *genericCommandBuilder[B]) discordDefineForCreation() *discordgo.Applica
 	if len(b.contexts) > 0 {
 		contexts = &b.contexts
 	}
+	var nameLocalizations *map[discordgo.Locale]string
+	if b.name.Localizations != nil {
+		nameLocalizations = &b.name.Localizations
+	}
 	return &discordgo.ApplicationCommand{
-		Name:             b.name,
-		NSFW:             &b.nsfw,
-		IntegrationTypes: integrations,
-		Contexts:         contexts,
+		Name:              b.name.Value,
+		NameLocalizations: nameLocalizations,
+		NSFW:              &b.nsfw,
+		IntegrationTypes:  integrations,
+		Contexts:          contexts,
 	}
 }
 
-func (b *genericCommandBuilder[B]) Name(name string) B {
-	b.name = name
-	return b.upper
+func (b *genericCommandBuilder[B]) Name() *util.Localizable[B] {
+	return &b.name
 }
 
 func (b *genericCommandBuilder[B]) ForGuild(guildId string) B {

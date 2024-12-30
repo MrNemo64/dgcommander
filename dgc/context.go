@@ -127,7 +127,12 @@ type SlashAutocompleteContext struct {
 }
 
 func (ctx *SlashAutocompleteContext) AddChoice(name string, value any) *SlashAutocompleteContext {
-	ctx.choices = append(ctx.choices, &discordgo.ApplicationCommandOptionChoice{Name: name, Value: value})
+	ctx.choices = append(ctx.choices, &discordgo.ApplicationCommandOptionChoice{Name: name, Value: value, NameLocalizations: nil})
+	return ctx
+}
+
+func (ctx *SlashAutocompleteContext) AddLocalizedChoice(name string, value any, localizations map[discordgo.Locale]string) *SlashAutocompleteContext {
+	ctx.choices = append(ctx.choices, &discordgo.ApplicationCommandOptionChoice{Name: name, Value: value, NameLocalizations: localizations})
 	return ctx
 }
 

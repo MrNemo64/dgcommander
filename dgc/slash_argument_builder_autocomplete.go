@@ -27,7 +27,7 @@ type stringSlashCommandAutocompleteArgumentBuilder struct {
 func (b *stringSlashCommandAutocompleteArgumentBuilder) createSpecific() SlashCommandArgument {
 	arg := &StringSlashCommandAutocompleteArgumentHandler{
 		StringSlashCommandArgument: StringSlashCommandArgument{
-			inlinedSlashCommandArgument[string]{b.name},
+			inlinedSlashCommandArgument[string]{b.name.Value},
 		},
 		genericSlashCommandAutocompleteArgumentHandler: genericSlashCommandAutocompleteArgumentHandler[*StringSlashCommandAutocompleteArgumentHandler]{
 			handler: b.handler,
@@ -39,8 +39,7 @@ func (b *stringSlashCommandAutocompleteArgumentBuilder) createSpecific() SlashCo
 
 func NewStringAutocompleteArgument() *stringSlashCommandAutocompleteArgumentBuilder {
 	b := &stringSlashCommandAutocompleteArgumentBuilder{}
-	b.genericSlashCommandAutocompleteArgumentBuilder.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionString
-	b.genericSlashCommandAutocompleteArgumentBuilder.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandAutocompleteArgumentBuilder.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionString)
 	return b
 }
 
@@ -53,7 +52,7 @@ type integerSlashCommandAutocompleteArgumentBuilder struct {
 func (b *integerSlashCommandAutocompleteArgumentBuilder) createSpecific() SlashCommandArgument {
 	arg := &IntegerSlashCommandAutocompleteArgumentHandler{
 		IntegerSlashCommandArgument: IntegerSlashCommandArgument{
-			name: b.name,
+			name: b.name.Value,
 		},
 		genericSlashCommandAutocompleteArgumentHandler: genericSlashCommandAutocompleteArgumentHandler[*IntegerSlashCommandAutocompleteArgumentHandler]{
 			handler: b.handler,
@@ -65,8 +64,7 @@ func (b *integerSlashCommandAutocompleteArgumentBuilder) createSpecific() SlashC
 
 func NewIntegerAutocompleteArgument() *integerSlashCommandAutocompleteArgumentBuilder {
 	b := &integerSlashCommandAutocompleteArgumentBuilder{}
-	b.genericSlashCommandAutocompleteArgumentBuilder.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionInteger
-	b.genericSlashCommandAutocompleteArgumentBuilder.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandAutocompleteArgumentBuilder.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionInteger)
 	return b
 }
 
@@ -79,7 +77,7 @@ type numberSlashCommandAutocompleteArgumentBuilder struct {
 func (b *numberSlashCommandAutocompleteArgumentBuilder) createSpecific() SlashCommandArgument {
 	arg := &NumberSlashCommandAutocompleteArgumentHandler{
 		NumberSlashCommandArgument: NumberSlashCommandArgument{
-			inlinedSlashCommandArgument[float64]{b.name},
+			inlinedSlashCommandArgument[float64]{b.name.Value},
 		},
 		genericSlashCommandAutocompleteArgumentHandler: genericSlashCommandAutocompleteArgumentHandler[*NumberSlashCommandAutocompleteArgumentHandler]{
 			handler: b.handler,
@@ -91,7 +89,6 @@ func (b *numberSlashCommandAutocompleteArgumentBuilder) createSpecific() SlashCo
 
 func NewNumberAutocompleteArgument() *numberSlashCommandAutocompleteArgumentBuilder {
 	b := &numberSlashCommandAutocompleteArgumentBuilder{}
-	b.genericSlashCommandAutocompleteArgumentBuilder.genericSlashCommandArgumentBuilder.kind = discordgo.ApplicationCommandOptionNumber
-	b.genericSlashCommandAutocompleteArgumentBuilder.genericSlashCommandArgumentBuilder.upper = b
+	b.genericSlashCommandAutocompleteArgumentBuilder.genericSlashCommandArgumentBuilder = newGenericSlashCommandArgumentBuilder(b, discordgo.ApplicationCommandOptionNumber)
 	return b
 }
