@@ -55,12 +55,12 @@ func (c *executionContext) Ctx() context.Context {
 	return c.ctx
 }
 
-type respondingContext struct {
+type RespondingContext struct {
 	*executionContext
 	alreadyResponded bool
 }
 
-func (ctx *respondingContext) respond(resp *discordgo.InteractionResponse) error {
+func (ctx *RespondingContext) respond(resp *discordgo.InteractionResponse) error {
 	if ctx.alreadyResponded {
 		return ErrAlreadyResponded
 	}
@@ -73,42 +73,42 @@ func (ctx *respondingContext) respond(resp *discordgo.InteractionResponse) error
 	return nil
 }
 
-func (ctx *respondingContext) RespondWithMessage(message *discordgo.InteractionResponseData) error {
+func (ctx *RespondingContext) RespondWithMessage(message *discordgo.InteractionResponseData) error {
 	return ctx.respond(&discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: message,
 	})
 }
 
-func (ctx *respondingContext) RespondWithModal(modal *discordgo.InteractionResponseData) error {
+func (ctx *RespondingContext) RespondWithModal(modal *discordgo.InteractionResponseData) error {
 	return ctx.respond(&discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseModal,
 		Data: modal,
 	})
 }
 
-func (ctx *respondingContext) RespondLatter() error {
+func (ctx *RespondingContext) RespondLatter() error {
 	return ctx.respond(&discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		Data: nil,
 	})
 }
 
-func (ctx *respondingContext) AddFollowup(wait bool, data *discordgo.WebhookParams) (*discordgo.Message, error) {
+func (ctx *RespondingContext) AddFollowup(wait bool, data *discordgo.WebhookParams) (*discordgo.Message, error) {
 	return ctx.Session.FollowupMessageCreate(ctx.I.Interaction, wait, data)
 }
 
 // Message
 
 type MessageExecutionContext struct {
-	respondingContext
+	*RespondingContext
 	Message *discordgo.Message
 }
 
 // User
 
 type UserExecutionContext struct {
-	respondingContext
+	*RespondingContext
 	User   *discordgo.User
 	Member *discordgo.Member // Nil if not running on a guild
 }
@@ -116,7 +116,7 @@ type UserExecutionContext struct {
 // Slash
 
 type SlashExecutionContext struct {
-	respondingContext
+	*RespondingContext
 	slashCommandArgumentList
 }
 

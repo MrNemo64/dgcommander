@@ -5,7 +5,7 @@ import (
 )
 
 type MessageCommandBuilder struct {
-	genericCommandBuilder[*MessageCommandBuilder]
+	genericCommandBuilder[*MessageCommandBuilder, MessageMiddleware]
 	handler MessageCommandHandler
 }
 
@@ -18,7 +18,8 @@ func NewMessageCommand() *MessageCommandBuilder {
 
 func (b *MessageCommandBuilder) create() command {
 	return &messageCommand{
-		handler: b.handler,
+		handler:     b.handler,
+		middlewares: b.middlewares,
 	}
 }
 

@@ -5,7 +5,7 @@ import (
 )
 
 type UserCommandBuilder struct {
-	genericCommandBuilder[*UserCommandBuilder]
+	genericCommandBuilder[*UserCommandBuilder, UserMiddleware]
 	handler UserCommandHandler
 }
 
@@ -18,7 +18,8 @@ func NewUserCommand() *UserCommandBuilder {
 
 func (b *UserCommandBuilder) create() command {
 	return &userCommand{
-		handler: b.handler,
+		handler:     b.handler,
+		middlewares: b.middlewares,
 	}
 }
 

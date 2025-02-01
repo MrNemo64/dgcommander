@@ -9,12 +9,14 @@ var (
 )
 
 type MessageCommandHandler func(ctx *MessageExecutionContext) error
+type MessageMiddleware = func(info *MessageExecutionContext, next func()) error
 
 type messageCommand struct {
-	handler MessageCommandHandler
+	middlewares []MessageMiddleware
+	handler     MessageCommandHandler
 }
 
-func (c *messageCommand) execute(info *InvokationInformation) (bool, error) {
+func (c *messageCommand) execute(info *RespondingContext) (bool, error) {
 	data := info.I.ApplicationCommandData()
 	targetMessage := data.TargetID
 	message, found := data.Resolved.Messages[targetMessage]
@@ -22,11 +24,16 @@ func (c *messageCommand) execute(info *InvokationInformation) (bool, error) {
 		return false, ErrMessageCommandHasNoMessage
 	}
 	ctx := MessageExecutionContext{
-		respondingContext: respondingContext{
-			executionContext: newExecutionContext(info.DGC.ctx, info),
-		},
-		Message: message,
+		RespondingContext: info,
+		Message:           message,
 	}
-	err := c.handler(&ctx)
-	return ctx.alreadyResponded, err
+	mc := newMiddlewareChain(&ctx, c.middlewares)
+	if err := mc.startChain(); err != nil {
+		return ctx.acknowledged, err
+	}
+	if mc.allMiddlewaresCalled {
+		err := c.handler(&ctx)
+		return ctx.acknowledged, err
+	}
+	return ctx.acknowledged, nil
 }

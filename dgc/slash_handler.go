@@ -22,16 +22,19 @@ type slashCommand interface {
 
 type genericSlashCommand interface {
 	slashCommand
-	doExecute(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
+	doExecute(info *RespondingContext, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
 	doAutocomplete(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (interactionAcknowledged bool, err error)
 }
 
+type SlashSimpleMiddleware = func(ctx *SlashExecutionContext, next func()) error
+
 type simpleSlashCommand struct {
-	handler SlashCommandHandler
-	args    slashCommandArgumentListDefinition
+	handler     SlashCommandHandler
+	args        slashCommandArgumentListDefinition
+	middlewares []SlashSimpleMiddleware
 }
 
-func (c *simpleSlashCommand) execute(info *InvokationInformation) (bool, error) {
+func (c *simpleSlashCommand) execute(info *RespondingContext) (bool, error) {
 	return c.doExecute(info, info.I.ApplicationCommandData().Options)
 }
 
@@ -39,19 +42,24 @@ func (c *simpleSlashCommand) autocomplete(info *InvokationInformation) (bool, er
 	return c.doAutocomplete(info, info.I.ApplicationCommandData().Options)
 }
 
-func (c *simpleSlashCommand) doExecute(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
+func (c *simpleSlashCommand) doExecute(info *RespondingContext, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
 	args, err := c.args.parse(info.I.ApplicationCommandData().Resolved, options, false)
 	if err != nil {
 		return false, err
 	}
 	ctx := SlashExecutionContext{
-		respondingContext: respondingContext{
-			executionContext: newExecutionContext(info.DGC.ctx, info),
-		},
+		RespondingContext:        info,
 		slashCommandArgumentList: args,
 	}
-	err = c.handler(&ctx)
-	return ctx.alreadyResponded, err
+	mc := newMiddlewareChain(&ctx, c.middlewares)
+	if err := mc.startChain(); err != nil {
+		return ctx.acknowledged, err
+	}
+	if mc.allMiddlewaresCalled {
+		err := c.handler(&ctx)
+		return ctx.acknowledged, err
+	}
+	return ctx.acknowledged, nil
 }
 
 func (c *simpleSlashCommand) doAutocomplete(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
@@ -97,11 +105,14 @@ func (c *simpleSlashCommand) findFocusedArgument(options []*discordgo.Applicatio
 	return auto, nil
 }
 
+type SlashMultiMiddleware = func(ctx *RespondingContext, next func()) error
+
 type multiSlashCommand struct {
 	subCommands map[string]genericSlashCommand
+	middlewares []SlashMultiMiddleware
 }
 
-func (c *multiSlashCommand) execute(info *InvokationInformation) (bool, error) {
+func (c *multiSlashCommand) execute(info *RespondingContext) (bool, error) {
 	return c.doExecute(info, info.I.ApplicationCommandData().Options)
 }
 
@@ -109,12 +120,19 @@ func (c *multiSlashCommand) autocomplete(info *InvokationInformation) (interacti
 	return c.doAutocomplete(info, info.I.ApplicationCommandData().Options)
 }
 
-func (c *multiSlashCommand) doExecute(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
+func (c *multiSlashCommand) doExecute(ctx *RespondingContext, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
 	command, option, err := c.findSubCommand(options)
 	if err != nil {
 		return false, err
 	}
-	return command.doExecute(info, option.Options)
+	mc := newMiddlewareChain(ctx, c.middlewares)
+	if err := mc.startChain(); err != nil {
+		return ctx.acknowledged, err
+	}
+	if !mc.allMiddlewaresCalled {
+		return ctx.acknowledged, nil
+	}
+	return command.doExecute(ctx, option.Options)
 }
 
 func (c *multiSlashCommand) doAutocomplete(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {

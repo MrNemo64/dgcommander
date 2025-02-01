@@ -5,12 +5,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type genericSlashCommandBuilder[B specificCommandBuilder] struct {
-	genericCommandBuilder[B]
+type genericSlashCommandBuilder[B specificCommandBuilder, M any] struct {
+	genericCommandBuilder[B, M]
 	description util.Localizable[B]
 }
 
-func (b *genericSlashCommandBuilder[B]) discordDefineForCreation() *discordgo.ApplicationCommand {
+func (b *genericSlashCommandBuilder[B, M]) discordDefineForCreation() *discordgo.ApplicationCommand {
 	c := b.genericCommandBuilder.discordDefineForCreation()
 	c.Type = discordgo.ChatApplicationCommand
 	c.Description = b.description.Value
@@ -22,14 +22,14 @@ func (b *genericSlashCommandBuilder[B]) discordDefineForCreation() *discordgo.Ap
 	return c
 }
 
-func (b *genericSlashCommandBuilder[B]) Description() *util.Localizable[B] {
+func (b *genericSlashCommandBuilder[B, M]) Description() *util.Localizable[B] {
 	return &b.description
 }
 
 // Simple
 
 type SimpleSlashCommandBuilder struct {
-	genericSlashCommandBuilder[*SimpleSlashCommandBuilder]
+	genericSlashCommandBuilder[*SimpleSlashCommandBuilder, SlashSimpleMiddleware]
 	slashCommandArgumentListBuilder[*SimpleSlashCommandBuilder]
 	handler SlashCommandHandler
 }
@@ -51,8 +51,9 @@ func (b *SimpleSlashCommandBuilder) discordDefineForCreation() *discordgo.Applic
 
 func (b *SimpleSlashCommandBuilder) create() command {
 	return &simpleSlashCommand{
-		handler: b.handler,
-		args:    b.slashCommandArgumentListBuilder.create(),
+		handler:     b.handler,
+		args:        b.slashCommandArgumentListBuilder.create(),
+		middlewares: b.middlewares,
 	}
 }
 
@@ -69,7 +70,7 @@ type subcommandLikeBuilder interface {
 }
 
 type MultiSlashCommandBuilder struct {
-	genericSlashCommandBuilder[*MultiSlashCommandBuilder]
+	genericSlashCommandBuilder[*MultiSlashCommandBuilder, SlashMultiMiddleware]
 	subCommands []subcommandLikeBuilder
 }
 
@@ -98,6 +99,7 @@ func (b *MultiSlashCommandBuilder) create() command {
 	}
 	return &multiSlashCommand{
 		subCommands: sub,
+		middlewares: b.middlewares,
 	}
 }
 

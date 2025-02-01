@@ -21,7 +21,7 @@ type InvokationInformation struct {
 }
 
 type command interface {
-	execute(*InvokationInformation) (interactionAcknowledged bool, err error)
+	execute(*RespondingContext) (interactionAcknowledged bool, err error)
 }
 
 type autocomplete interface {
@@ -44,6 +44,8 @@ type DGCommander struct {
 	log          *slog.Logger
 	timeProvider TimeProvider
 	ctx          context.Context
+
+	commandsMiddleware []func(*RespondingContext, func()) error
 }
 
 func New(ctx context.Context, log *slog.Logger, session *discordgo.Session, timeProvider TimeProvider) *DGCommander {
@@ -92,6 +94,18 @@ func (c *DGCommander) manageInteraction(ss *discordgo.Session, i *discordgo.Inte
 	info.log = c.log.With("sender", info.Sender.ID) // TODO add information about the interaction to be able to identify it
 	if i.Type == discordgo.InteractionApplicationCommand {
 		data := i.ApplicationCommandData()
+		ctx := RespondingContext{
+			executionContext: newExecutionContext(c.ctx, &info),
+		}
+		chain := newMiddlewareChain(&ctx, c.commandsMiddleware)
+		if err := chain.startChain(); err != nil {
+			c.respondError(ss, i.Interaction, ctx.acknowledged, err)
+			return
+		}
+		if !chain.allMiddlewaresCalled {
+			return
+		}
+
 		c.lock.RLock()
 		command, found := c.getCommandByNameInGuildAndType(data.Name, i.GuildID, data.CommandType)
 		c.lock.RUnlock()
@@ -100,8 +114,7 @@ func (c *DGCommander) manageInteraction(ss *discordgo.Session, i *discordgo.Inte
 			c.respondError(ss, i.Interaction, false, fmt.Errorf("Unknown command"))
 			return
 		}
-
-		interactionAcknowledged, err := command.execute(&info)
+		interactionAcknowledged, err := command.execute(&ctx)
 		if err != nil {
 			c.respondError(ss, i.Interaction, interactionAcknowledged, err)
 		}

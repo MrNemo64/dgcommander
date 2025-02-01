@@ -15,16 +15,17 @@ type CommandBuilder interface {
 type specificCommandBuilder interface {
 }
 
-type genericCommandBuilder[B specificCommandBuilder] struct {
+type genericCommandBuilder[B specificCommandBuilder, M any] struct {
 	upper        B
 	name         util.Localizable[B]
 	guildId      string
 	nsfw         bool
 	integrations []discordgo.ApplicationIntegrationType // https://discord.com/developers/docs/resources/application#application-object-application-integration-types
 	contexts     []discordgo.InteractionContextType     // https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-context-types
+	middlewares  []M
 }
 
-func (b *genericCommandBuilder[B]) discordDefineForCreation() *discordgo.ApplicationCommand {
+func (b *genericCommandBuilder[B, M]) discordDefineForCreation() *discordgo.ApplicationCommand {
 	var integrations *[]discordgo.ApplicationIntegrationType
 	if len(b.integrations) > 0 {
 		integrations = &b.integrations
@@ -46,21 +47,26 @@ func (b *genericCommandBuilder[B]) discordDefineForCreation() *discordgo.Applica
 	}
 }
 
-func (b *genericCommandBuilder[B]) Name() *util.Localizable[B] {
+func (b *genericCommandBuilder[B, M]) Name() *util.Localizable[B] {
 	return &b.name
 }
 
-func (b *genericCommandBuilder[B]) ForGuild(guildId string) B {
+func (b *genericCommandBuilder[B, M]) ForGuild(guildId string) B {
 	b.guildId = guildId
 	return b.upper
 }
 
-func (b *genericCommandBuilder[B]) Nsfw(nsfw bool) B {
+func (b *genericCommandBuilder[B, M]) Nsfw(nsfw bool) B {
 	b.nsfw = nsfw
 	return b.upper
 }
 
-func (b *genericCommandBuilder[B]) GuildInstallable(installable bool) B {
+func (b *genericCommandBuilder[B, M]) AddMiddleware(middleware M) B {
+	b.middlewares = append(b.middlewares, middleware)
+	return b.upper
+}
+
+func (b *genericCommandBuilder[B, M]) GuildInstallable(installable bool) B {
 	if installable {
 		if !slices.Contains(b.integrations, discordgo.ApplicationIntegrationGuildInstall) {
 			b.integrations = append(b.integrations, discordgo.ApplicationIntegrationGuildInstall)
@@ -71,7 +77,7 @@ func (b *genericCommandBuilder[B]) GuildInstallable(installable bool) B {
 	return b.upper
 }
 
-func (b *genericCommandBuilder[B]) UserInstallable(installable bool) B {
+func (b *genericCommandBuilder[B, M]) UserInstallable(installable bool) B {
 	if installable {
 		if !slices.Contains(b.integrations, discordgo.ApplicationIntegrationUserInstall) {
 			b.integrations = append(b.integrations, discordgo.ApplicationIntegrationUserInstall)
@@ -82,7 +88,7 @@ func (b *genericCommandBuilder[B]) UserInstallable(installable bool) B {
 	return b.upper
 }
 
-func (b *genericCommandBuilder[B]) AllowInGuilds(allowed bool) B {
+func (b *genericCommandBuilder[B, M]) AllowInGuilds(allowed bool) B {
 	if allowed {
 		if !slices.Contains(b.contexts, discordgo.InteractionContextGuild) {
 			b.contexts = append(b.contexts, discordgo.InteractionContextGuild)
@@ -93,7 +99,7 @@ func (b *genericCommandBuilder[B]) AllowInGuilds(allowed bool) B {
 	return b.upper
 }
 
-func (b *genericCommandBuilder[B]) AllowInBotDM(allowed bool) B {
+func (b *genericCommandBuilder[B, M]) AllowInBotDM(allowed bool) B {
 	if allowed {
 		if !slices.Contains(b.contexts, discordgo.InteractionContextBotDM) {
 			b.contexts = append(b.contexts, discordgo.InteractionContextBotDM)
@@ -104,7 +110,7 @@ func (b *genericCommandBuilder[B]) AllowInBotDM(allowed bool) B {
 	return b.upper
 }
 
-func (b *genericCommandBuilder[B]) AllowInPrivateChannel(allowed bool) B {
+func (b *genericCommandBuilder[B, M]) AllowInPrivateChannel(allowed bool) B {
 	if allowed {
 		if !slices.Contains(b.contexts, discordgo.InteractionContextPrivateChannel) {
 			b.contexts = append(b.contexts, discordgo.InteractionContextPrivateChannel)
@@ -115,7 +121,7 @@ func (b *genericCommandBuilder[B]) AllowInPrivateChannel(allowed bool) B {
 	return b.upper
 }
 
-func (b *genericCommandBuilder[B]) AllowEverywhere(allowed bool) B {
+func (b *genericCommandBuilder[B, M]) AllowEverywhere(allowed bool) B {
 	b.AllowInBotDM(allowed)
 	b.AllowInGuilds(allowed)
 	b.AllowInPrivateChannel(allowed)

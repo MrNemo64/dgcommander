@@ -9,12 +9,14 @@ var (
 )
 
 type UserCommandHandler func(ctx *UserExecutionContext) error
+type UserMiddleware = func(ctx *UserExecutionContext, next func()) error
 
 type userCommand struct {
-	handler UserCommandHandler
+	middlewares []UserMiddleware
+	handler     UserCommandHandler
 }
 
-func (c *userCommand) execute(info *InvokationInformation) (bool, error) {
+func (c *userCommand) execute(info *RespondingContext) (bool, error) {
 	data := info.I.ApplicationCommandData()
 	targetUser := data.TargetID
 	user, found := data.Resolved.Users[targetUser]
@@ -27,12 +29,17 @@ func (c *userCommand) execute(info *InvokationInformation) (bool, error) {
 		member.User = user
 	}
 	ctx := UserExecutionContext{
-		respondingContext: respondingContext{
-			executionContext: newExecutionContext(info.DGC.ctx, info),
-		},
-		User:   user,
-		Member: member,
+		RespondingContext: info,
+		User:              user,
+		Member:            member,
 	}
-	err := c.handler(&ctx)
-	return ctx.alreadyResponded, err
+	mc := newMiddlewareChain(&ctx, c.middlewares)
+	if err := mc.startChain(); err != nil {
+		return ctx.acknowledged, err
+	}
+	if mc.allMiddlewaresCalled {
+		err := c.handler(&ctx)
+		return ctx.acknowledged, err
+	}
+	return ctx.acknowledged, nil
 }
