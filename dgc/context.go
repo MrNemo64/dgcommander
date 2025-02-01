@@ -18,7 +18,7 @@ type executionContext struct {
 	*InvokationInformation
 	acknowledged bool
 	timer        *time.Timer
-	ctx          context.Context
+	Ctx          context.Context
 	cancelCtx    context.CancelFunc
 	// TODO add info about
 	// - context like if running on a guild/dm
@@ -30,7 +30,7 @@ func newExecutionContext(ctx context.Context, info *InvokationInformation) *exec
 	c, f := context.WithCancel(ctx)
 	ectx := &executionContext{
 		InvokationInformation: info,
-		ctx:                   c,
+		Ctx:                   c,
 		cancelCtx:             f,
 	}
 	ectx.timer = time.AfterFunc(ectx.EndTime().Sub(info.timeProvider.Now()), func() { ectx.cancelCtx() })
@@ -49,10 +49,6 @@ func (ctx *executionContext) EndTime() time.Time {
 		return ctx.ReceivedTime.Add(15 * time.Minute)
 	}
 	return ctx.ReceivedTime.Add(3 * time.Second)
-}
-
-func (c *executionContext) Ctx() context.Context {
-	return c.ctx
 }
 
 type RespondingContext struct {
