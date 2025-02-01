@@ -42,6 +42,15 @@ func (c *simpleSlashCommand) autocomplete(info *InvokationInformation) (bool, er
 	return c.doAutocomplete(info, info.I.ApplicationCommandData().Options)
 }
 
+type simpleSlashMiddleHandler struct {
+	ctx     *SlashExecutionContext
+	handler SlashCommandHandler
+}
+
+func (ssmh *simpleSlashMiddleHandler) handle() error {
+	return ssmh.handler(ssmh.ctx)
+}
+
 func (c *simpleSlashCommand) doExecute(info *RespondingContext, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
 	args, err := c.args.parse(info.I.ApplicationCommandData().Resolved, options, false)
 	if err != nil {
@@ -51,12 +60,14 @@ func (c *simpleSlashCommand) doExecute(info *RespondingContext, options []*disco
 		RespondingContext:        info,
 		slashCommandArgumentList: args,
 	}
-	mc := newMiddlewareChain(&ctx, c.middlewares)
-	if err := mc.startChain(); err != nil {
-		return ctx.acknowledged, err
+
+	ssmh := simpleSlashMiddleHandler{
+		ctx:     &ctx,
+		handler: c.handler,
 	}
-	if mc.allMiddlewaresCalled {
-		err := c.handler(&ctx)
+
+	mc := newMiddlewareChain(&ctx, c.middlewares, ssmh.handle)
+	if err := mc.startChain(); err != nil {
 		return ctx.acknowledged, err
 	}
 	return ctx.acknowledged, nil
@@ -120,19 +131,38 @@ func (c *multiSlashCommand) autocomplete(info *InvokationInformation) (interacti
 	return c.doAutocomplete(info, info.I.ApplicationCommandData().Options)
 }
 
+type multiSlashMiddleHandler struct {
+	ctx     *RespondingContext
+	handler genericSlashCommand
+	options []*discordgo.ApplicationCommandInteractionDataOption
+}
+
+func (msmh *multiSlashMiddleHandler) handle() error {
+	ack, err := msmh.handler.doExecute(msmh.ctx, msmh.options)
+	msmh.ctx.acknowledged = ack
+	return err
+}
+
 func (c *multiSlashCommand) doExecute(ctx *RespondingContext, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {
 	command, option, err := c.findSubCommand(options)
 	if err != nil {
 		return false, err
 	}
-	mc := newMiddlewareChain(ctx, c.middlewares)
+
+	msmh := multiSlashMiddleHandler{
+		ctx:     ctx,
+		handler: command,
+		options: option.Options,
+	}
+
+	mc := newMiddlewareChain(ctx, c.middlewares, msmh.handle)
 	if err := mc.startChain(); err != nil {
 		return ctx.acknowledged, err
 	}
 	if !mc.allMiddlewaresCalled {
 		return ctx.acknowledged, nil
 	}
-	return command.doExecute(ctx, option.Options)
+	return ctx.acknowledged, nil
 }
 
 func (c *multiSlashCommand) doAutocomplete(info *InvokationInformation, options []*discordgo.ApplicationCommandInteractionDataOption) (bool, error) {

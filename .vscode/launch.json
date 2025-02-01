@@ -13,6 +13,14 @@
       "cwd": "examples/message"
     },
     {
+      "name": "middleware",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "examples/middleware",
+      "cwd": "examples/middleware"
+    },
+    {
       "name": "slash-calculator",
       "type": "go",
       "request": "launch",

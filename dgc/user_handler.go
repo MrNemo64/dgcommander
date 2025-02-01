@@ -16,6 +16,15 @@ type userCommand struct {
 	handler     UserCommandHandler
 }
 
+type userMiddleHandler struct {
+	ctx     *UserExecutionContext
+	handler UserCommandHandler
+}
+
+func (umh *userMiddleHandler) handle() error {
+	return umh.handler(umh.ctx)
+}
+
 func (c *userCommand) execute(info *RespondingContext) (bool, error) {
 	data := info.I.ApplicationCommandData()
 	targetUser := data.TargetID
@@ -33,12 +42,14 @@ func (c *userCommand) execute(info *RespondingContext) (bool, error) {
 		User:              user,
 		Member:            member,
 	}
-	mc := newMiddlewareChain(&ctx, c.middlewares)
-	if err := mc.startChain(); err != nil {
-		return ctx.acknowledged, err
+
+	umh := userMiddleHandler{
+		ctx:     &ctx,
+		handler: c.handler,
 	}
-	if mc.allMiddlewaresCalled {
-		err := c.handler(&ctx)
+
+	mc := newMiddlewareChain(&ctx, c.middlewares, umh.handle)
+	if err := mc.startChain(); err != nil {
 		return ctx.acknowledged, err
 	}
 	return ctx.acknowledged, nil

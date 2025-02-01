@@ -36,6 +36,8 @@ type DefaultTimeProvider struct{}
 
 func (DefaultTimeProvider) Now() time.Time { return time.Now() }
 
+type CommandMiddleware = func(ctx *RespondingContext, next func()) error
+
 type DGCommander struct {
 	// TODO add some kind of middleware to commands
 	lock         sync.RWMutex
@@ -45,7 +47,7 @@ type DGCommander struct {
 	timeProvider TimeProvider
 	ctx          context.Context
 
-	commandsMiddleware []func(*RespondingContext, func()) error
+	commandsMiddleware []CommandMiddleware
 }
 
 func New(ctx context.Context, log *slog.Logger, session *discordgo.Session, timeProvider TimeProvider) *DGCommander {
@@ -75,6 +77,35 @@ func (c *DGCommander) AddCommand(b CommandBuilder) (*discordgo.ApplicationComman
 	return created, nil
 }
 
+func (c *DGCommander) AddMiddleware(middleware CommandMiddleware) *DGCommander {
+	c.commandsMiddleware = append(c.commandsMiddleware, middleware)
+	return c
+}
+
+type dgcMiddleHandler struct {
+	ctx *RespondingContext
+	c   *DGCommander
+	ss  *discordgo.Session
+	i   *discordgo.InteractionCreate
+}
+
+func (dgcmh *dgcMiddleHandler) handle() error {
+	dgcmh.c.lock.RLock()
+	data := dgcmh.i.ApplicationCommandData()
+	command, found := dgcmh.c.getCommandByNameInGuildAndType(data.Name, dgcmh.i.GuildID, data.CommandType)
+	dgcmh.c.lock.RUnlock()
+	if !found {
+		dgcmh.ctx.log.Info("Unknown application command received", "received-command", data)
+		dgcmh.c.respondError(dgcmh.ss, dgcmh.i.Interaction, false, fmt.Errorf("Unknown command"))
+		return nil
+	}
+	interactionAcknowledged, err := command.execute(dgcmh.ctx)
+	if err != nil {
+		dgcmh.c.respondError(dgcmh.ss, dgcmh.i.Interaction, interactionAcknowledged, err)
+	}
+	return nil
+}
+
 func (c *DGCommander) manageInteraction(ss *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type == discordgo.InteractionPing || i.Type == discordgo.InteractionMessageComponent || i.Type == discordgo.InteractionModalSubmit {
 		return
@@ -93,30 +124,21 @@ func (c *DGCommander) manageInteraction(ss *discordgo.Session, i *discordgo.Inte
 	}
 	info.log = c.log.With("sender", info.Sender.ID) // TODO add information about the interaction to be able to identify it
 	if i.Type == discordgo.InteractionApplicationCommand {
-		data := i.ApplicationCommandData()
 		ctx := RespondingContext{
 			executionContext: newExecutionContext(c.ctx, &info),
 		}
-		chain := newMiddlewareChain(&ctx, c.commandsMiddleware)
+
+		dgcmh := dgcMiddleHandler{
+			ctx: &ctx,
+			c:   c,
+			ss:  ss,
+			i:   i,
+		}
+
+		chain := newMiddlewareChain(&ctx, c.commandsMiddleware, dgcmh.handle)
 		if err := chain.startChain(); err != nil {
 			c.respondError(ss, i.Interaction, ctx.acknowledged, err)
 			return
-		}
-		if !chain.allMiddlewaresCalled {
-			return
-		}
-
-		c.lock.RLock()
-		command, found := c.getCommandByNameInGuildAndType(data.Name, i.GuildID, data.CommandType)
-		c.lock.RUnlock()
-		if !found {
-			info.log.Info("Unknown application command received", "received-command", data)
-			c.respondError(ss, i.Interaction, false, fmt.Errorf("Unknown command"))
-			return
-		}
-		interactionAcknowledged, err := command.execute(&ctx)
-		if err != nil {
-			c.respondError(ss, i.Interaction, interactionAcknowledged, err)
 		}
 	} else if i.Type == discordgo.InteractionApplicationCommandAutocomplete {
 		data := i.ApplicationCommandData()

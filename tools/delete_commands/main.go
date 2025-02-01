@@ -30,9 +30,9 @@ func main() {
 		if err := ss.ApplicationCommandDelete(ss.State.Application.ID, "", cmd.ID); err != nil {
 			panic(err)
 		}
-		fmt.Printf("Deleted command %s\n", cmd.Name)
+		fmt.Printf("- Deleted command %s\n", cmd.Name)
 	}
-	if _, err := fmt.Println("Deleted commands"); err != nil {
+	if _, err := fmt.Println("Deleted all commands"); err != nil {
 		panic(err)
 	}
 }

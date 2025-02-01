@@ -10,6 +10,9 @@ delete.commands:
 example.message:
 	cd examples/message && go run .
 
+example.middleware:
+	cd examples/middleware && go run .
+
 example.slash-calculator:
 	cd examples/slash-calculator && go run .
 

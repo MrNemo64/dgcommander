@@ -16,6 +16,15 @@ type messageCommand struct {
 	handler     MessageCommandHandler
 }
 
+type messageMiddleHandler struct {
+	ctx     *MessageExecutionContext
+	handler MessageCommandHandler
+}
+
+func (mmh *messageMiddleHandler) handle() error {
+	return mmh.handler(mmh.ctx)
+}
+
 func (c *messageCommand) execute(info *RespondingContext) (bool, error) {
 	data := info.I.ApplicationCommandData()
 	targetMessage := data.TargetID
@@ -27,12 +36,14 @@ func (c *messageCommand) execute(info *RespondingContext) (bool, error) {
 		RespondingContext: info,
 		Message:           message,
 	}
-	mc := newMiddlewareChain(&ctx, c.middlewares)
-	if err := mc.startChain(); err != nil {
-		return ctx.acknowledged, err
+
+	mmh := messageMiddleHandler{
+		ctx:     &ctx,
+		handler: c.handler,
 	}
-	if mc.allMiddlewaresCalled {
-		err := c.handler(&ctx)
+
+	mc := newMiddlewareChain(&ctx, c.middlewares, mmh.handle)
+	if err := mc.startChain(); err != nil {
 		return ctx.acknowledged, err
 	}
 	return ctx.acknowledged, nil

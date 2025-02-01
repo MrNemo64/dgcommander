@@ -118,6 +118,7 @@ type SubSlashCommandBuilder struct {
 	handler     SlashCommandHandler
 	name        util.Localizable[*SubSlashCommandBuilder]
 	description util.Localizable[*SubSlashCommandBuilder]
+	middlewares []SlashSimpleMiddleware
 }
 
 func NewSubCommand() *SubSlashCommandBuilder {
@@ -141,8 +142,9 @@ func (b *SubSlashCommandBuilder) discordDefineForCreation() *discordgo.Applicati
 
 func (b *SubSlashCommandBuilder) create() (string, genericSlashCommand) {
 	return b.name.Value, &simpleSlashCommand{
-		handler: b.handler,
-		args:    b.slashCommandArgumentListBuilder.create(),
+		handler:     b.handler,
+		args:        b.slashCommandArgumentListBuilder.create(),
+		middlewares: b.middlewares,
 	}
 }
 
@@ -154,6 +156,11 @@ func (b *SubSlashCommandBuilder) Description() *util.Localizable[*SubSlashComman
 	return &b.description
 }
 
+func (b *SubSlashCommandBuilder) AddMiddleware(middleware SlashSimpleMiddleware) *SubSlashCommandBuilder {
+	b.middlewares = append(b.middlewares, middleware)
+	return b
+}
+
 func (b *SubSlashCommandBuilder) Handler(handler SlashCommandHandler) *SubSlashCommandBuilder {
 	b.handler = handler
 	return b
@@ -163,6 +170,7 @@ type SubSlashCommandGroupBuilder struct {
 	commands    []*SubSlashCommandBuilder
 	name        util.Localizable[*SubSlashCommandGroupBuilder]
 	description util.Localizable[*SubSlashCommandGroupBuilder]
+	middlewares []SlashMultiMiddleware
 }
 
 func NewSubCommandGroup() *SubSlashCommandGroupBuilder {
@@ -195,6 +203,7 @@ func (b *SubSlashCommandGroupBuilder) create() (string, genericSlashCommand) {
 	}
 	return b.name.Value, &multiSlashCommand{
 		subCommands: sub,
+		middlewares: b.middlewares,
 	}
 }
 
@@ -204,6 +213,11 @@ func (b *SubSlashCommandGroupBuilder) Name() *util.Localizable[*SubSlashCommandG
 
 func (b *SubSlashCommandGroupBuilder) Description() *util.Localizable[*SubSlashCommandGroupBuilder] {
 	return &b.description
+}
+
+func (b *SubSlashCommandGroupBuilder) AddMiddleware(middleware SlashMultiMiddleware) *SubSlashCommandGroupBuilder {
+	b.middlewares = append(b.middlewares, middleware)
+	return b
 }
 
 func (b *SubSlashCommandGroupBuilder) AddSubCommand(command *SubSlashCommandBuilder) *SubSlashCommandGroupBuilder {

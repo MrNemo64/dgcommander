@@ -25,16 +25,18 @@ var (
 	ErrMiddlewareCallChain = MiddlewareCallChainError{DGCError: makeError("errors returned by the middlewares: %w")}
 )
 
-func newMiddlewareChain[T any](value *T, middlewares []func(*T, func()) error) middlewareChain[T] {
+func newMiddlewareChain[T any](value *T, middlewares []func(*T, func()) error, handler func() error) middlewareChain[T] {
 	return middlewareChain[T]{
 		value:       value,
 		middlewares: middlewares,
+		handler:     handler,
 	}
 }
 
 type middlewareChain[T any] struct {
 	value                *T
 	middlewares          []func(*T, func()) error
+	handler              func() error
 	index                int
 	allMiddlewaresCalled bool
 	errs                 []error
@@ -55,6 +57,9 @@ func (mc *middlewareChain[T]) next() {
 	mc.index++
 	if mc.index >= len(mc.middlewares) {
 		mc.allMiddlewaresCalled = true
+		if err := mc.handler(); err != nil {
+			mc.errs = append(mc.errs, err)
+		}
 		return
 	}
 	middle := mc.middlewares[mc.index]
